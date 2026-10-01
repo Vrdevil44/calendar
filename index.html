@@ -3,7 +3,7 @@
 
 <head>
     <meta charset='utf-8' />
-    <title>Veerji's Calender</title>
+    <title>Veerji's Calendar</title>
     <!-- FullCalendar Standard Bundle via CDN -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -68,6 +68,36 @@
 
         #goto-date:hover {
             background-color: #0056b3;
+        }
+
+        #load-demo {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        #load-demo:hover {
+            background-color: #545b62;
+        }
+
+        /* Demo-mode notice */
+        #demo-note {
+            max-width: 900px;
+            margin: 0 auto 15px auto;
+            padding: 10px 15px;
+            background-color: #e7f3ff;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            color: #004085;
+            text-align: center;
         }
 
         /* Modal Popup Styling */
@@ -187,39 +217,123 @@
 
     </style>
 
-    <!-- Import Firebase SDK -->
-    <script type="module">
-        // Import Firebase functions for Realtime Database
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+    <!-- Local offline store: entries live in the browser's localStorage.
+         There is no backend here — this demo never contacts any Firebase project. -->
+    <script>
+        'use strict';
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDrPMoEkEgC7Evd4aKgttd3WW1Hu9qRIvA",
-            authDomain: "cheque-57345.firebaseapp.com",
-            databaseURL: "https://cheque-57345-default-rtdb.firebaseio.com",
-            projectId: "cheque-57345",
-            storageBucket: "cheque-57345.appspot.com",
-            messagingSenderId: "667485397211",
-            appId: "1:667485397211:web:c505122b2285d3e93becfe",
-            measurementId: "G-N5B1ZCTJ66"
-        };
+        var STORE_KEY = 'veerjis-calendar-entries-v1';
+        var demoCounter = 0;
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+        function fmtDate(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+
+        function makeId() {
+            demoCounter += 1;
+            return 'e' + Date.now().toString(36) + '-' + demoCounter;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        // --- Store: { 'YYYY-MM-DD': [ {id, name, amount, remark}, ... ] } ---
+        function readStore() {
+            try {
+                return JSON.parse(localStorage.getItem(STORE_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function writeStore(data) {
+            localStorage.setItem(STORE_KEY, JSON.stringify(data));
+        }
+
+        function getEntries(dateStr) {
+            var data = readStore();
+            return data[dateStr] || [];
+        }
+
+        function addEntry(dateStr, entry) {
+            var data = readStore();
+            if (!data[dateStr]) data[dateStr] = [];
+            entry.id = makeId();
+            data[dateStr].push(entry);
+            writeStore(data);
+            return entry;
+        }
+
+        function deleteEntry(dateStr, id) {
+            var data = readStore();
+            if (data[dateStr]) {
+                data[dateStr] = data[dateStr].filter(function (e) { return e.id !== id; });
+                if (data[dateStr].length === 0) delete data[dateStr];
+                writeStore(data);
+            }
+        }
+
+        function dayTotal(dateStr) {
+            return getEntries(dateStr).reduce(function (sum, e) { return sum + Number(e.amount); }, 0);
+        }
+
+        // --- Seeded demo dataset (relative to today so it always looks alive) ---
+        function seedDemo() {
+            var today = new Date();
+            function daysAgo(n) {
+                var d = new Date(today);
+                d.setDate(d.getDate() - n);
+                return fmtDate(d);
+            }
+
+            var data = {};
+            function put(dateStr, name, amount, remark) {
+                if (!data[dateStr]) data[dateStr] = [];
+                data[dateStr].push({ id: makeId(), name: name, amount: amount, remark: remark });
+            }
+
+            put(daysAgo(0), 'Grocery run', 84.50, 'Weekly veggies');
+            put(daysAgo(1), 'Petrol', 62.00, 'Full tank');
+            put(daysAgo(1), 'Tiffin', 260.00, 'Monthly tiffin service');
+            put(daysAgo(3), 'Car insurance', 378.00, 'Monthly premium');
+            put(daysAgo(4), 'Movie night', 38.75, 'Weekend outing');
+            put(daysAgo(6), 'Phone bill', 100.00, 'Virgin Plus');
+            // High-spend day to show the red day-cell colouring
+            put(daysAgo(9), 'Rent', 1300.00, 'Brentwood 1BHK');
+            put(daysAgo(9), 'Laptop down payment', 1400.00, 'Work upgrade');
+            put(daysAgo(9), 'Eating out', 320.00, 'Friends visiting');
+
+            writeStore(data);
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
-            var modal = document.getElementById("entryModal");
-            var closeModalBtn = document.getElementsByClassName("close")[0];
-            var saveEntryBtn = document.getElementById("save-entry");
-            var nameInput = document.getElementById("name-input");
-            var amountInput = document.getElementById("amount-input");
-            var remarkInput = document.getElementById("remark-input");
-            var entryList = document.getElementById("entry-list");
-            var totalAmountDisplay = document.getElementById("total-amount");
+            var modal = document.getElementById('entryModal');
+            var closeModalBtn = document.getElementsByClassName('close')[0];
+            var saveEntryBtn = document.getElementById('save-entry');
+            var nameInput = document.getElementById('name-input');
+            var amountInput = document.getElementById('amount-input');
+            var remarkInput = document.getElementById('remark-input');
+            var entryList = document.getElementById('entry-list');
+            var totalAmountDisplay = document.getElementById('total-amount');
             var selectedDate = null;
+
+            // Auto-seed demo data on first visit so the calendar is playable right away.
+            if (!localStorage.getItem(STORE_KEY)) {
+                seedDemo();
+            }
+
+            // "Load demo data" button: resets the store to the sample dataset.
+            document.getElementById('load-demo').onclick = function () {
+                seedDemo();
+                displayEntriesForSelectedDate();
+                showCalendarTotals();
+            };
 
             // Initialize FullCalendar with Month View
             var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -233,11 +347,11 @@
                         text: 'Go to Date',
                         click: function () {
                             const dateStr = document.getElementById('date-search').value;
-                            const selectedDate = new Date(dateStr);
-                            if (!isNaN(selectedDate.getTime())) {
-                                calendar.gotoDate(selectedDate);
+                            const picked = new Date(dateStr);
+                            if (dateStr && !isNaN(picked.getTime())) {
+                                calendar.gotoDate(picked);
                             } else {
-                                alert("Invalid Date. Please enter in YYYY-MM-DD format.");
+                                alert('Invalid Date. Please enter in YYYY-MM-DD format.');
                             }
                         }
                     }
@@ -249,16 +363,15 @@
                     right: 'dateSearch'
                 },
 
-                // Before rendering the calendar, fetch all entries and show totals in day cells
+                // Before rendering the calendar, read all entries and show totals in day cells
                 datesSet: function () {
                     showCalendarTotals();
                 },
 
                 dateClick: function (info) {
                     selectedDate = info.dateStr;
-                    console.log("Date clicked: ", selectedDate); // Debugging log
                     displayEntriesForSelectedDate();
-                    modal.style.display = "block"; // Show the modal
+                    modal.style.display = 'block'; // Show the modal
                 }
             });
 
@@ -266,21 +379,17 @@
 
             // Close the modal
             closeModalBtn.onclick = function () {
-                modal.style.display = "none";
+                modal.style.display = 'none';
             };
 
-            // Save new entry and update Firebase
+            // Save new entry into the local store
             saveEntryBtn.onclick = function () {
                 var name = nameInput.value.trim();
                 var amount = parseFloat(amountInput.value.trim());
                 var remark = remarkInput.value.trim();
 
                 if (name && !isNaN(amount)) {
-                    var entryData = { name, amount, remark };
-
-                    // Save entry to Firebase
-                    const entryRef = ref(db, 'entries/' + selectedDate);
-                    push(entryRef, entryData);
+                    addEntry(selectedDate, { name: name, amount: amount, remark: remark });
 
                     // Clear input fields after saving
                     nameInput.value = '';
@@ -296,35 +405,38 @@
             // Display existing entries and total amount for the selected date
             function displayEntriesForSelectedDate() {
                 entryList.innerHTML = '';
+
+                if (!selectedDate) {
+                    totalAmountDisplay.innerHTML = '';
+                    return;
+                }
+
+                var entries = getEntries(selectedDate);
                 var totalAmount = 0;
 
-                const entryRef = ref(db, 'entries/' + selectedDate);
-                onValue(entryRef, (snapshot) => {
-                    const entries = snapshot.val();
-                    if (entries) {
-                        var index = 0;
-                        for (let key in entries) {
-                            var entry = entries[key];
-                            var entryDiv = document.createElement('div');
-                            entryDiv.className = 'entry';
-                            entryDiv.innerHTML = `${++index}. ${entry.name} - $${entry.amount.toFixed(2)} - ${entry.remark}`;
+                entries.forEach(function (entry, index) {
+                    var entryDiv = document.createElement('div');
+                    entryDiv.className = 'entry';
+                    entryDiv.innerHTML = (index + 1) + '. ' + escapeHtml(entry.name) +
+                        ' - $' + Number(entry.amount).toFixed(2) + ' - ' + escapeHtml(entry.remark);
 
-                            var deleteBtn = document.createElement('span');
-                            deleteBtn.innerHTML = '🗑️';
-                            deleteBtn.className = 'entry-delete';
-                            deleteBtn.onclick = function () {
-                                remove(ref(db, 'entries/' + selectedDate + '/' + key));
-                                displayEntriesForSelectedDate();
-                                showCalendarTotals(); // Update calendar totals after deletion
-                            };
+                    var deleteBtn = document.createElement('span');
+                    deleteBtn.innerHTML = '🗑️';
+                    deleteBtn.className = 'entry-delete';
+                    (function (id) {
+                        deleteBtn.onclick = function () {
+                            deleteEntry(selectedDate, id);
+                            displayEntriesForSelectedDate();
+                            showCalendarTotals(); // Update calendar totals after deletion
+                        };
+                    })(entry.id);
 
-                            entryDiv.appendChild(deleteBtn);
-                            entryList.appendChild(entryDiv);
-                            totalAmount += entry.amount;
-                        }
-                    }
-                    totalAmountDisplay.innerHTML = `Total: $${totalAmount.toFixed(2)}`;
+                    entryDiv.appendChild(deleteBtn);
+                    entryList.appendChild(entryDiv);
+                    totalAmount += Number(entry.amount);
                 });
+
+                totalAmountDisplay.innerHTML = 'Total: $' + totalAmount.toFixed(2);
             }
 
             // Show totals and color-coded background in the calendar view
@@ -332,47 +444,39 @@
                 const days = document.querySelectorAll('.fc-daygrid-day');
                 days.forEach(day => {
                     const date = day.getAttribute('data-date');
-                    const entryRef = ref(db, 'entries/' + date);
+                    const entries = getEntries(date);
 
-                    onValue(entryRef, (snapshot) => {
-                        const entries = snapshot.val();
+                    // Clear previous total display, if any
+                    const totalDisplay = day.querySelector('.total-display');
+                    if (totalDisplay) totalDisplay.remove();
 
-                        // Clear previous total display, if any
-                        const totalDisplay = day.querySelector('.total-display');
-                        if (totalDisplay) totalDisplay.remove();
+                    // Reset background color first
+                    day.style.backgroundColor = '';
 
-                        // Reset background color first
-                        day.style.backgroundColor = ''; // Reset to default
+                    if (entries.length > 0) {
+                        var totalAmount = entries.reduce(function (sum, e) {
+                            return sum + Number(e.amount);
+                        }, 0);
 
-                        if (entries) {
-                            var totalAmount = 0;
-                            for (let key in entries) {
-                                totalAmount += entries[key].amount;
-                            }
+                        // Display total in the cell and append it in the day element
+                        const totalElement = document.createElement('div');
+                        totalElement.classList.add('total-display');
+                        totalElement.innerHTML = '$' + totalAmount.toFixed(2);
+                        day.appendChild(totalElement);
 
-                            // Display total in the cell and append it in the day element
-                            const totalElement = document.createElement('div');
-                            totalElement.classList.add('total-display');
-                            totalElement.innerHTML = `$${totalAmount.toFixed(2)}`;
-                            day.appendChild(totalElement);
-
-                            // Set background color based on the total amount
-                            if (totalAmount > 3000) {
-                                day.style.backgroundColor = 'tomato'; // High total, set to red
-                            } else {
-                                day.style.backgroundColor = 'lightgreen'; // Low total, set to green
-                            }
+                        // Set background color based on the total amount
+                        if (totalAmount > 3000) {
+                            day.style.backgroundColor = 'tomato'; // High total, set to red
                         } else {
-                            // No entries, reset the background color to default
-                            day.style.backgroundColor = '';
+                            day.style.backgroundColor = 'lightgreen'; // Low total, set to green
                         }
-                    });
+                    }
                 });
             }
 
             window.onclick = function (event) {
                 if (event.target == modal) {
-                    modal.style.display = "none";
+                    modal.style.display = 'none';
                 }
             };
         });
@@ -381,9 +485,13 @@
 </head>
 
 <body>
-    <h2>FullCalendar</h2>
+    <h2>Veerji's Calendar</h2>
+    <div id="demo-note">
+        Demo mode — entries are saved in this browser's localStorage only. Nothing leaves your device, no account needed.
+    </div>
     <div id="toolbar" style="text-align:center;">
         <input type="date" id="date-search" placeholder="YYYY-MM-DD" />
+        <button id="load-demo">Load demo data</button>
     </div>
     <div id='calendar'></div>
 
