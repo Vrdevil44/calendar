@@ -664,11 +664,47 @@
             '<span class="swatch low"></span>' + formatCents(HIGH_DAY_THRESHOLD_CENTS) + ' or less per day' +
             '<span class="swatch high"></span>over ' + formatCents(HIGH_DAY_THRESHOLD_CENTS);
 
+        // ---- Burn-rate forecast -------------------------------------------
+        // Pace = (sum of entries dated the 1st..today of the current month) / days elapsed.
+        // Projection for day d = pace x d, kept in integer cents (round once, at the end).
+        // Projections are display-only: they never touch entries or real day totals.
+        function getForecast() {
+            var now = new Date();
+            var year = now.getFullYear(), month = now.getMonth();
+            var elapsed = now.getDate();
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            var prefix = year + '-' + pad(month + 1) + '-';
+            var sum = 0, count = 0;
+            for (var d = 1; d <= elapsed; d++) {
+                var key = prefix + pad(d);
+                count += getEntries(key).length;
+                sum += dayTotal(key);
+            }
+            return {
+                prefix: prefix, elapsed: elapsed, daysInMonth: daysInMonth, hasData: count > 0,
+                monthEnd: new Date(year, month, daysInMonth),
+                projected: function (day) { return Math.round(sum * day / elapsed); },
+                overThreshold: sum > HIGH_DAY_THRESHOLD_CENTS * elapsed   // pace > threshold, no division
+            };
+        }
+
+        function renderForecastSummary() {
+            var f = getForecast();
+            var el = document.getElementById('forecast-summary');
+            el.classList.toggle('over', f.hasData && f.overThreshold);
+            el.textContent = f.hasData
+                ? 'At this pace: ' + formatCents(f.projected(f.daysInMonth)) + ' by ' +
+                  f.monthEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+                : 'Add entries to see your forecast';
+        }
+
         // ---- Day cells ----------------------------------------------------
         function decorateCell(cell, dateStr) {
             var frame = cell.querySelector('.fc-daygrid-day-frame') || cell;
             var old = cell.querySelector('.total-display');
             if (old) old.remove();
+            var oldProj = cell.querySelector('.projected-display');
+            if (oldProj) oldProj.remove();
             cell.classList.remove('day-low', 'day-high');
 
             var label = parseISODate(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -683,6 +719,17 @@
             } else {
                 label += ', no entries';
             }
+            var f = getForecast();
+            if (f.hasData && dateStr.indexOf(f.prefix) === 0) {
+                var day = parseInt(dateStr.slice(8), 10);
+                if (day > f.elapsed) {
+                    var proj = document.createElement('div');
+                    proj.className = 'projected-display';
+                    proj.textContent = '~' + formatCents(f.projected(day));
+                    frame.appendChild(proj);
+                    label += ', projected month-to-date ' + formatCents(f.projected(day));
+                }
+            }
             cell.setAttribute('aria-label', label);
             if (!cell.hasAttribute('tabindex')) cell.setAttribute('tabindex', '-1');
         }
@@ -691,6 +738,7 @@
 
         function refreshTotals() {
             dayCells().forEach(function (cell) { decorateCell(cell, cell.getAttribute('data-date')); });
+            renderForecastSummary();
         }
 
         // Roving tabindex: one tab stop for the grid, arrow keys move between days.
