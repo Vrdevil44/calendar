@@ -1,0 +1,13 @@
+{
+  "name": "veerjis-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Veerji's Calendar: single-file expense calendar. Dev dependency is only for the smoke test.",
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "fullcalendar": "6.1.15",
+    "playwright": "^1.63.0"
+  }
+}

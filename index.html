@@ -1,514 +1,934 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 
 <head>
-    <meta charset='utf-8' />
-    <title>Veerji's Calendar</title>
-    <!-- FullCalendar Standard Bundle via CDN -->
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calendar</title>
+    <meta name="description" content="A tiny daily expense tracker on a month calendar. Click a day, add entries, and watch the colour-coded totals update. Runs entirely in your browser." />
+    <meta name="theme-color" content="#0056b3" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Calendar" />
+    <meta property="og:title" content="Calendar" />
+    <meta property="og:description" content="Daily expense tracker on a month calendar with colour-coded totals. No account, no backend: your data stays in your browser." />
+    <meta property="og:url" content="https://vrdevil44.github.io/calendar/" />
+    <meta property="og:image" content="https://vrdevil44.github.io/calendar/screenshots/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Month view of Calendar with green and red daily totals" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Calendar" />
+    <meta name="twitter:description" content="Daily expense tracker on a month calendar with colour-coded totals. Runs entirely in your browser." />
+    <meta name="twitter:image" content="https://vrdevil44.github.io/calendar/screenshots/og-image.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230056b3'/%3E%3Crect x='10' y='18' width='44' height='36' rx='4' fill='%23fff'/%3E%3Crect x='10' y='10' width='44' height='14' rx='4' fill='%23ff8a7a'/%3E%3C/svg%3E" />
+    <!-- FullCalendar standard bundle, pinned to 6.1.15 and verified with SRI.
+         If you bump the version, regenerate the hash:
+         curl -s <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"
+        integrity="sha384-B1OFx8Gy9GjPu8UbUyXbGQpzll9ubAUQ9agInFJ8NnD7nYG1u/CLR+Sqr5yifl4q"
+        crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* General Body Styling */
         body {
-            font-family: 'Merriweather', serif;
+            font-family: 'Merriweather', Georgia, serif;
             background-color: #f4f1ea;
+            color: #222;
             margin: 0;
             padding: 20px;
         }
 
-        h2 {
-            font-family: 'Merriweather', serif;
+        h1 {
             font-weight: bold;
-            color: #333;
+            color: #222;
             text-align: center;
-            font-size: 36px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #007bff;
+            font-size: clamp(26px, 6vw, 36px);
+            margin: 0 0 20px;
+            border-bottom: 2px solid #0056b3;
             padding-bottom: 10px;
         }
 
-        /* Calendar Styling */
-        #calendar {
+        button,
+        input,
+        textarea {
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+
+        :focus-visible {
+            outline: 3px solid #ff9f1c;
+            outline-offset: 2px;
+        }
+
+        /* Notices */
+        #demo-note,
+        .banner {
             max-width: 900px;
-            margin: 0 auto;
-            border: 2px solid #007bff;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Toolbar (Date Search) Styling */
-        #toolbar {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        #date-search {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 2px solid #007bff;
-            background-color: #fff;
-            margin-right: 10px;
-        }
-
-        #goto-date {
+            margin: 0 auto 12px;
             padding: 10px 15px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        #goto-date:hover {
-            background-color: #0056b3;
-        }
-
-        #load-demo {
-            padding: 10px 15px;
-            font-size: 16px;
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            transition: background-color 0.3s ease;
-        }
-
-        #load-demo:hover {
-            background-color: #545b62;
-        }
-
-        /* Demo-mode notice */
-        #demo-note {
-            max-width: 900px;
-            margin: 0 auto 15px auto;
-            padding: 10px 15px;
-            background-color: #e7f3ff;
-            border: 1px solid #007bff;
             border-radius: 8px;
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        #demo-note {
+            background-color: #e7f3ff;
+            border: 1px solid #0056b3;
+            color: #004085;
+        }
+
+        .banner {
+            background-color: #fff3cd;
+            border: 1px solid #856404;
+            color: #533f03;
+        }
+
+        .banner.error {
+            background-color: #f8d7da;
+            border-color: #842029;
+            color: #58151c;
+        }
+
+        #status {
+            max-width: 900px;
+            margin: 0 auto 10px;
+            min-height: 20px;
+            font-family: 'Roboto', Arial, sans-serif;
             font-size: 14px;
             color: #004085;
             text-align: center;
         }
 
-        /* Modal Popup Styling */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
+        /* Toolbar */
+        #toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-family: 'Roboto', Arial, sans-serif;
         }
 
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            border: 2px solid #007bff;
-            border-radius: 10px;
-            width: 400px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-        }
-
-        #name-input,
-        #amount-input,
-        #remark-input {
-            width: 100%;
-            margin-top: 10px;
-            padding: 10px;
+        #toolbar label {
             font-size: 14px;
-            border: 2px solid #ccc;
-            border-radius: 5px;
+            font-weight: bold;
         }
 
-        #save-entry {
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            background-color: #28a745;
-            margin-top: 20px;
-            width: 100%;
+        #date-search {
+            padding: 9px;
             font-size: 16px;
             border-radius: 5px;
+            border: 2px solid #0056b3;
+            background-color: #fff;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #0056b3;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
-        #save-entry:hover {
-            background-color: #218838;
+        .btn:hover {
+            background-color: #004494;
         }
 
-        /* Entry and Delete Button Styling */
-        .entry {
-            margin-top: 10px;
-            font-size: 14px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
+        .btn.secondary {
+            background-color: #565e64;
         }
 
-        .entry-delete {
+        .btn.secondary:hover {
+            background-color: #3d4348;
+        }
+
+        #legend {
+            text-align: center;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            vertical-align: -1px;
+            margin: 0 4px 0 10px;
+        }
+
+        .swatch.low { background-color: #c9f0cb; }
+        .swatch.high { background-color: #f8b4ab; }
+
+        /* Calendar */
+        #calendar {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid #0056b3;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        .fc-daygrid-day {
+            position: relative;
             cursor: pointer;
-            color: #dc3545;
-            font-size: 18px;
-            margin-left: 5px;
         }
 
-        /* Calendar Number and Total Amount Styling */
         .fc-daygrid-day-number {
             position: absolute;
             top: 5px;
             right: 5px;
             font-size: 14px;
             font-weight: bold;
-            color: #333;
+            color: #222;
         }
 
-        /* Center the total amount in the middle of the cell */
+        /* Days from adjacent months: shaded instead of faded, so their numbers keep full contrast */
+        .fc .fc-day-other .fc-daygrid-day-top { opacity: 1; }
+        .fc-day-other .fc-daygrid-day-number { font-weight: normal; color: #444; }
+        .fc-day-other:not(.day-low):not(.day-high) { background-color: #f1f1f1; }
+
         .total-display {
-            font-size: 14px;
-            color: #333;
             position: absolute;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 700;
             text-align: center;
+            overflow-wrap: anywhere;
+            pointer-events: none;
         }
 
-        /* Ensure the day cell is relative to place elements inside it */
-        .fc-daygrid-day {
+        /* Colour-coded totals (text/background pairs are >= 7:1 contrast) */
+        .fc-daygrid-day.day-low { background-color: #c9f0cb; }
+        .fc-daygrid-day.day-high { background-color: #f8b4ab; }
+        .day-low .total-display { color: #0f2e14; }
+        .day-high .total-display { color: #4a0a02; }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            z-index: 10;
+            inset: 0;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal[hidden] {
+            display: none;
+        }
+
+        .modal-content {
             position: relative;
+            background-color: #fff;
+            margin: 5vh auto;
+            padding: 20px;
+            border: 2px solid #0056b3;
+            border-radius: 10px;
+            width: min(420px, 92vw);
+            box-sizing: border-box;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            font-family: 'Roboto', Arial, sans-serif;
         }
 
-        /* Background color for totals */
-        .high-amount {
-            background-color: #ff6b6b;
+        .modal-content h2 {
+            margin: 0 40px 10px 0;
+            font-size: 18px;
         }
 
-        .low-amount {
-            background-color: #6bc46d;
+        .close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            padding: 0 8px;
+            color: #444;
+            background: none;
+            border: none;
+            font-size: 30px;
+            line-height: 1.2;
+            cursor: pointer;
         }
 
+        .close:hover {
+            color: #000;
+        }
+
+        #entry-form label {
+            display: block;
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #name-input,
+        #amount-input,
+        #remark-input {
+            width: 100%;
+            margin-top: 4px;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #767676;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        #remark-input {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #form-error {
+            min-height: 18px;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #842029;
+        }
+
+        #save-entry {
+            width: 100%;
+            margin-top: 6px;
+            background-color: #1e6e32;
+        }
+
+        #save-entry:hover {
+            background-color: #165326;
+        }
+
+        #cancel-edit {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        #cancel-edit[hidden] {
+            display: none;
+        }
+
+        #entry-list {
+            list-style: none;
+            margin: 14px 0 0;
+            padding: 0;
+        }
+
+        .entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            background-color: #f6f6f6;
+            border: 1px solid #ccc;
+        }
+
+        .entry-text {
+            overflow-wrap: anywhere;
+        }
+
+        .entry-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 6px;
+        }
+
+        .entry-actions button {
+            padding: 6px 10px;
+            font-size: 13px;
+            color: #0a3a75;
+            background: #fff;
+            border: 1px solid #0a3a75;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .entry-actions button.delete {
+            color: #8a1c28;
+            border-color: #8a1c28;
+        }
+
+        #total-amount {
+            margin-top: 14px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            #calendar { padding: 8px; border-radius: 10px; }
+            .fc .fc-toolbar { flex-wrap: wrap; gap: 6px; justify-content: center; }
+            .fc .fc-toolbar-title { font-size: 1.2em; }
+            .fc-daygrid-day-number { font-size: 12px; top: 2px; right: 3px; }
+            .total-display { font-size: 10px; top: 55%; }
+            .fc .fc-col-header-cell-cushion { font-size: 12px; padding: 4px 0; }
+        }
     </style>
+</head>
 
-    <!-- Local offline store: entries live in the browser's localStorage.
-         There is no backend here — this demo never contacts any Firebase project. -->
+<body>
+    <main>
+    <h1>Calendar</h1>
+    <div id="demo-note">
+        Demo mode: entries are saved in this browser's localStorage only. Nothing leaves your device, no account needed. The sample entries are fake.
+    </div>
+    <div id="banners"></div>
+    <div id="toolbar">
+        <label for="date-search">Go to date</label>
+        <input type="date" id="date-search" />
+        <button type="button" class="btn" id="goto-date">Go</button>
+        <button type="button" class="btn secondary" id="load-demo">Load demo data</button>
+        <button type="button" class="btn secondary" id="export-json">Export JSON</button>
+        <button type="button" class="btn secondary" id="import-json">Import JSON</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
+    </div>
+    <div id="legend"></div>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="calendar"></div>
+    </main>
+
+    <div id="entryModal" class="modal" hidden>
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <button type="button" class="close" id="close-modal" aria-label="Close">&times;</button>
+            <h2 id="modal-title"></h2>
+            <form id="entry-form" novalidate>
+                <label for="name-input">Name</label>
+                <input type="text" id="name-input" maxlength="80" autocomplete="off" required>
+                <label for="amount-input">Amount ($, minus for refunds)</label>
+                <input type="text" id="amount-input" inputmode="decimal" autocomplete="off" placeholder="e.g. 12.50" required>
+                <label for="remark-input">Remark (optional)</label>
+                <textarea id="remark-input" maxlength="200"></textarea>
+                <div id="form-error" role="alert"></div>
+                <button type="submit" class="btn" id="save-entry">Add entry</button>
+                <button type="button" class="btn secondary" id="cancel-edit" hidden>Cancel edit</button>
+            </form>
+            <ul id="entry-list"></ul>
+            <div id="total-amount"></div>
+        </div>
+    </div>
+
     <script>
         'use strict';
 
-        var STORE_KEY = 'veerjis-calendar-entries-v1';
-        var demoCounter = 0;
+        // ---- Config -------------------------------------------------------
+        // A day is "high" when its total is strictly greater than this (in cents).
+        // Exactly $3,000.00 is still green. One constant on purpose: it becomes per-person later.
+        var HIGH_DAY_THRESHOLD_CENTS = 3000 * 100;
+        var MAX_ENTRY_CENTS = 1000000 * 100;   // sanity cap: $1,000,000 per entry
+        var MAX_NAME = 80;
+        var MAX_REMARK = 200;
+        var MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
+        var SCHEMA_VERSION = 2;
+        var STORE_KEY = 'veerjis-calendar';
+        var CORRUPT_KEY = 'veerjis-calendar-corrupt';
+        var LEGACY_KEY = 'veerjis-calendar-entries-v1';   // v1: bare {date: [{amount: float}]} map
+
+        // ---- Helpers ------------------------------------------------------
         function pad(n) { return (n < 10 ? '0' : '') + n; }
 
+        // Local calendar date <-> 'YYYY-MM-DD'. Never use new Date('YYYY-MM-DD'): that parses
+        // as UTC midnight and lands on the previous day west of Greenwich (e.g. Vancouver).
         function fmtDate(d) {
             return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
         }
 
+        function parseISODate(s) {
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+            if (!m) return null;
+            var d = new Date(+m[1], +m[2] - 1, +m[3]);
+            return fmtDate(d) === s ? d : null;
+        }
+
+        // Money is integer cents everywhere; strings are parsed without floats.
+        function parseCents(text) {
+            var m = /^(-?)(\d{1,9})(?:\.(\d{1,2}))?$/.exec(String(text).trim());
+            if (!m) return null;
+            var cents = parseInt(m[2], 10) * 100 + (m[3] ? parseInt((m[3] + '0').slice(0, 2), 10) : 0);
+            if (cents > MAX_ENTRY_CENTS) return null;
+            return m[1] && cents ? -cents : cents;
+        }
+
+        function formatCents(cents) {
+            var abs = Math.abs(cents);
+            return (cents < 0 ? '-' : '') + '$' + Math.floor(abs / 100).toLocaleString('en-US') + '.' + pad(abs % 100);
+        }
+
+        var idCounter = 0;
         function makeId() {
-            demoCounter += 1;
-            return 'e' + Date.now().toString(36) + '-' + demoCounter;
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            idCounter += 1;
+            return 'e' + Date.now().toString(36) + '-' + idCounter;
         }
 
-        function escapeHtml(s) {
-            return String(s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        // ---- UI notices ---------------------------------------------------
+        var bannersEl = document.getElementById('banners');
+        var statusEl = document.getElementById('status');
+
+        // One banner per key; pass null to clear it.
+        function setBanner(key, text, isError) {
+            var el = bannersEl.querySelector('[data-key="' + key + '"]');
+            if (!text) { if (el) el.remove(); return; }
+            if (!el) {
+                el = document.createElement('div');
+                el.setAttribute('data-key', key);
+                el.setAttribute('role', 'alert');
+                bannersEl.appendChild(el);
+            }
+            el.className = 'banner' + (isError ? ' error' : '');
+            el.textContent = text;
+        }
+
+        function say(text) { statusEl.textContent = text; }
+
+        // ---- Store --------------------------------------------------------
+        // Persisted shape: { version: 2, entries: { 'YYYY-MM-DD': [ {id, name, cents, remark, category} ] } }
+        // `category` is reserved for later and unused by the UI.
+        var entries = {};
+
+        // Returns a clean entry, or null if it is unusable. `legacy` accepts v1's float `amount`.
+        function cleanEntry(e, legacy) {
+            if (!e || typeof e !== 'object') return null;
+            var name = typeof e.name === 'string' ? e.name.trim().slice(0, MAX_NAME) : '';
+            if (!name) return null;
+            var cents = e.cents;
+            if (legacy) cents = typeof e.amount === 'number' ? Math.round(e.amount * 100) : NaN;
+            if (!Number.isSafeInteger(cents) || Math.abs(cents) > MAX_ENTRY_CENTS) return null;
+            return {
+                id: typeof e.id === 'string' && e.id ? e.id : makeId(),
+                name: name,
+                cents: cents,
+                remark: typeof e.remark === 'string' ? e.remark.trim().slice(0, MAX_REMARK) : '',
+                category: typeof e.category === 'string' && e.category ? e.category : null
+            };
+        }
+
+        // Validates a { date: [entry] } map. Returns { entries, dropped }.
+        function cleanEntryMap(map, legacy) {
+            var out = {};
+            var dropped = 0;
+            Object.keys(map).forEach(function (dateStr) {
+                var list = map[dateStr];
+                if (!parseISODate(dateStr) || !Array.isArray(list)) { dropped += Array.isArray(list) ? list.length : 1; return; }
+                list.forEach(function (raw) {
+                    var e = cleanEntry(raw, legacy);
+                    if (!e) { dropped += 1; return; }
+                    (out[dateStr] = out[dateStr] || []).push(e);
+                });
             });
+            return { entries: out, dropped: dropped };
         }
 
-        // --- Store: { 'YYYY-MM-DD': [ {id, name, amount, remark}, ... ] } ---
-        function readStore() {
+        // Validates a full envelope (from storage or an import file). Returns null if unusable.
+        function readEnvelope(obj) {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+            if (!Number.isInteger(obj.version) || obj.version < 1 || obj.version > SCHEMA_VERSION) return null;
+            if (!obj.entries || typeof obj.entries !== 'object' || Array.isArray(obj.entries)) return null;
+            return cleanEntryMap(obj.entries, false);
+        }
+
+        function persist() {
             try {
-                return JSON.parse(localStorage.getItem(STORE_KEY)) || {};
+                localStorage.setItem(STORE_KEY, JSON.stringify({ version: SCHEMA_VERSION, entries: entries }));
+                setBanner('storage', null);
+                return true;
             } catch (e) {
-                return {};
+                var full = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+                setBanner('storage', (full ? 'Browser storage is full' : 'Browser storage is unavailable (private mode or blocked)') +
+                    ', so your changes are not being saved. They stay in this tab until you close it. Use Export JSON to keep a copy.', true);
+                return false;
             }
         }
 
-        function writeStore(data) {
-            localStorage.setItem(STORE_KEY, JSON.stringify(data));
+        function loadStore() {
+            var raw;
+            try {
+                raw = localStorage.getItem(STORE_KEY);
+            } catch (e) {
+                // Storage blocked entirely: run in memory with demo data and warn.
+                seedDemo();
+                persist();
+                return;
+            }
+
+            if (raw === null) {
+                var legacy = null;
+                try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY)); } catch (e) { legacy = null; }
+                if (legacy && typeof legacy === 'object' && !Array.isArray(legacy)) {
+                    entries = cleanEntryMap(legacy, true).entries;   // legacy key is left untouched
+                } else {
+                    seedDemo();
+                }
+                persist();
+                return;
+            }
+
+            var parsed = null;
+            try { parsed = JSON.parse(raw); } catch (e) { parsed = null; }
+            var result = readEnvelope(parsed);
+            if (!result) {
+                // Corrupt or from a newer app version: keep the raw text aside and start empty.
+                try { localStorage.setItem(CORRUPT_KEY, raw); } catch (e) { /* best effort */ }
+                setBanner('corrupt', 'Your saved data could not be read, so the calendar started empty. ' +
+                    'A raw copy was kept in browser storage under "' + CORRUPT_KEY + '". Importing a JSON backup will restore your entries.', true);
+                return;
+            }
+            entries = result.entries;
+            if (result.dropped) {
+                setBanner('dropped', result.dropped + ' saved entr' + (result.dropped === 1 ? 'y was' : 'ies were') + ' invalid and skipped.');
+            }
         }
 
-        function getEntries(dateStr) {
-            var data = readStore();
-            return data[dateStr] || [];
+        function getEntries(dateStr) { return entries[dateStr] || []; }
+
+        function dayTotal(dateStr) {
+            return getEntries(dateStr).reduce(function (sum, e) { return sum + e.cents; }, 0);
         }
 
-        function addEntry(dateStr, entry) {
-            var data = readStore();
-            if (!data[dateStr]) data[dateStr] = [];
-            entry.id = makeId();
-            data[dateStr].push(entry);
-            writeStore(data);
-            return entry;
+        function addEntry(dateStr, fields) {
+            (entries[dateStr] = entries[dateStr] || []).push({
+                id: makeId(), name: fields.name, cents: fields.cents, remark: fields.remark, category: null
+            });
+            persist();
+        }
+
+        function updateEntry(dateStr, id, fields) {
+            getEntries(dateStr).forEach(function (e) {
+                if (e.id === id) { e.name = fields.name; e.cents = fields.cents; e.remark = fields.remark; }
+            });
+            persist();
         }
 
         function deleteEntry(dateStr, id) {
-            var data = readStore();
-            if (data[dateStr]) {
-                data[dateStr] = data[dateStr].filter(function (e) { return e.id !== id; });
-                if (data[dateStr].length === 0) delete data[dateStr];
-                writeStore(data);
-            }
+            if (!entries[dateStr]) return;
+            entries[dateStr] = entries[dateStr].filter(function (e) { return e.id !== id; });
+            if (!entries[dateStr].length) delete entries[dateStr];
+            persist();
         }
 
-        function dayTotal(dateStr) {
-            return getEntries(dateStr).reduce(function (sum, e) { return sum + Number(e.amount); }, 0);
-        }
-
-        // --- Seeded demo dataset (relative to today so it always looks alive) ---
+        // Obviously fake sample data, dated relative to today so the month always looks alive.
         function seedDemo() {
             var today = new Date();
-            function daysAgo(n) {
-                var d = new Date(today);
-                d.setDate(d.getDate() - n);
-                return fmtDate(d);
-            }
-
             var data = {};
-            function put(dateStr, name, amount, remark) {
-                if (!data[dateStr]) data[dateStr] = [];
-                data[dateStr].push({ id: makeId(), name: name, amount: amount, remark: remark });
+            function put(daysAgo, name, cents, remark) {
+                var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysAgo);
+                (data[fmtDate(d)] = data[fmtDate(d)] || []).push(
+                    { id: makeId(), name: '[Demo] ' + name, cents: cents, remark: remark, category: null });
             }
-
-            put(daysAgo(0), 'Grocery run', 84.50, 'Weekly veggies');
-            put(daysAgo(1), 'Petrol', 62.00, 'Full tank');
-            put(daysAgo(1), 'Tiffin', 260.00, 'Monthly tiffin service');
-            put(daysAgo(3), 'Car insurance', 378.00, 'Monthly premium');
-            put(daysAgo(4), 'Movie night', 38.75, 'Weekend outing');
-            put(daysAgo(6), 'Phone bill', 100.00, 'Virgin Plus');
-            // High-spend day to show the red day-cell colouring
-            put(daysAgo(9), 'Rent', 1300.00, 'Brentwood 1BHK');
-            put(daysAgo(9), 'Laptop down payment', 1400.00, 'Work upgrade');
-            put(daysAgo(9), 'Eating out', 320.00, 'Friends visiting');
-
-            writeStore(data);
+            put(0, 'Sample groceries', 8450, 'Fake data');
+            put(1, 'Pretend petrol', 6200, 'Not a real purchase');
+            put(1, 'Made-up lunch', 1475, 'Fake data');
+            put(3, 'Imaginary insurance', 37800, 'Sample entry');
+            put(4, 'Pretend movie night', 3875, 'Fake data');
+            put(6, 'Sample phone bill', 10000, 'Not real');
+            put(9, 'Pretend rent', 130000, 'High-spend day: shows red');
+            put(9, 'Imaginary laptop', 140000, 'Sample entry');
+            put(9, 'Made-up dinner party', 32000, 'Fake data');
+            put(12, 'Pretend refund', -2500, 'Negative amounts count as refunds');
+            entries = data;
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var modal = document.getElementById('entryModal');
-            var closeModalBtn = document.getElementsByClassName('close')[0];
-            var saveEntryBtn = document.getElementById('save-entry');
-            var nameInput = document.getElementById('name-input');
-            var amountInput = document.getElementById('amount-input');
-            var remarkInput = document.getElementById('remark-input');
-            var entryList = document.getElementById('entry-list');
-            var totalAmountDisplay = document.getElementById('total-amount');
-            var selectedDate = null;
+        // ---- Boot ---------------------------------------------------------
+        loadStore();
 
-            // Auto-seed demo data on first visit so the calendar is playable right away.
-            if (!localStorage.getItem(STORE_KEY)) {
-                seedDemo();
+        var calendarEl = document.getElementById('calendar');
+        var modal = document.getElementById('entryModal');
+        var form = document.getElementById('entry-form');
+        var nameInput = document.getElementById('name-input');
+        var amountInput = document.getElementById('amount-input');
+        var remarkInput = document.getElementById('remark-input');
+        var saveBtn = document.getElementById('save-entry');
+        var cancelEditBtn = document.getElementById('cancel-edit');
+        var formError = document.getElementById('form-error');
+        var entryList = document.getElementById('entry-list');
+        var totalAmountEl = document.getElementById('total-amount');
+        var selectedDate = null;
+        var editingId = null;
+        var calendar = null;
+
+        document.getElementById('legend').innerHTML =
+            '<span class="swatch low"></span>' + formatCents(HIGH_DAY_THRESHOLD_CENTS) + ' or less per day' +
+            '<span class="swatch high"></span>over ' + formatCents(HIGH_DAY_THRESHOLD_CENTS);
+
+        // ---- Day cells ----------------------------------------------------
+        function decorateCell(cell, dateStr) {
+            var frame = cell.querySelector('.fc-daygrid-day-frame') || cell;
+            var old = cell.querySelector('.total-display');
+            if (old) old.remove();
+            cell.classList.remove('day-low', 'day-high');
+
+            var label = parseISODate(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            if (getEntries(dateStr).length) {
+                var total = dayTotal(dateStr);
+                var el = document.createElement('div');
+                el.className = 'total-display';
+                el.textContent = formatCents(total);
+                frame.appendChild(el);
+                cell.classList.add(total > HIGH_DAY_THRESHOLD_CENTS ? 'day-high' : 'day-low');
+                label += ', total ' + formatCents(total);
+            } else {
+                label += ', no entries';
             }
+            cell.setAttribute('aria-label', label);
+            if (!cell.hasAttribute('tabindex')) cell.setAttribute('tabindex', '-1');
+        }
 
-            // "Load demo data" button: resets the store to the sample dataset.
-            document.getElementById('load-demo').onclick = function () {
-                seedDemo();
-                displayEntriesForSelectedDate();
-                showCalendarTotals();
-            };
+        function dayCells() { return calendarEl.querySelectorAll('.fc-daygrid-day[data-date]'); }
 
-            // Initialize FullCalendar with Month View
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                editable: true,
-                selectable: true,
-                events: [],
+        function refreshTotals() {
+            dayCells().forEach(function (cell) { decorateCell(cell, cell.getAttribute('data-date')); });
+        }
 
-                customButtons: {
-                    dateSearch: {
-                        text: 'Go to Date',
-                        click: function () {
-                            const dateStr = document.getElementById('date-search').value;
-                            const picked = new Date(dateStr);
-                            if (dateStr && !isNaN(picked.getTime())) {
-                                calendar.gotoDate(picked);
-                            } else {
-                                alert('Invalid Date. Please enter in YYYY-MM-DD format.');
-                            }
-                        }
-                    }
-                },
+        // Roving tabindex: one tab stop for the grid, arrow keys move between days.
+        function setTabStop(target) {
+            dayCells().forEach(function (c) { c.setAttribute('tabindex', c === target ? '0' : '-1'); });
+        }
 
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dateSearch'
-                },
+        function resetTabStop() {
+            setTabStop(calendarEl.querySelector('.fc-daygrid-day.fc-day-today') ||
+                calendarEl.querySelector('.fc-daygrid-day:not(.fc-day-other)'));
+        }
 
-                // Before rendering the calendar, read all entries and show totals in day cells
-                datesSet: function () {
-                    showCalendarTotals();
-                },
+        // ---- Modal --------------------------------------------------------
+        var lastFocus = null;
 
-                dateClick: function (info) {
-                    selectedDate = info.dateStr;
-                    displayEntriesForSelectedDate();
-                    modal.style.display = 'block'; // Show the modal
-                }
+        function resetForm() {
+            editingId = null;
+            form.reset();
+            formError.textContent = '';
+            saveBtn.textContent = 'Add entry';
+            cancelEditBtn.hidden = true;
+        }
+
+        function openModal(dateStr) {
+            selectedDate = dateStr;
+            lastFocus = document.activeElement;
+            document.getElementById('modal-title').textContent =
+                'Entries for ' + parseISODate(dateStr).toLocaleDateString('en-US',
+                    { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            resetForm();
+            renderEntryList();
+            modal.hidden = false;
+            nameInput.focus();
+        }
+
+        function closeModal() {
+            modal.hidden = true;
+            resetForm();
+            var cell = calendarEl.querySelector('.fc-daygrid-day[data-date="' + selectedDate + '"]');
+            if (cell) { setTabStop(cell); cell.focus(); }
+            else if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+
+        function renderEntryList() {
+            entryList.textContent = '';
+            getEntries(selectedDate).forEach(function (entry, index) {
+                var li = document.createElement('li');
+                li.className = 'entry';
+
+                var text = document.createElement('span');
+                text.className = 'entry-text';
+                text.textContent = (index + 1) + '. ' + entry.name + ' – ' + formatCents(entry.cents) +
+                    (entry.remark ? ' – ' + entry.remark : '');
+
+                var actions = document.createElement('span');
+                actions.className = 'entry-actions';
+                var editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.textContent = 'Edit';
+                editBtn.setAttribute('aria-label', 'Edit ' + entry.name);
+                editBtn.onclick = function () { startEdit(entry); };
+                var delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'delete';
+                delBtn.textContent = 'Delete';
+                delBtn.setAttribute('aria-label', 'Delete ' + entry.name);
+                delBtn.onclick = function () {
+                    if (editingId === entry.id) resetForm();
+                    deleteEntry(selectedDate, entry.id);
+                    changed();
+                    nameInput.focus();
+                };
+                actions.appendChild(editBtn);
+                actions.appendChild(delBtn);
+                li.appendChild(text);
+                li.appendChild(actions);
+                entryList.appendChild(li);
             });
+            totalAmountEl.textContent = 'Total: ' + formatCents(dayTotal(selectedDate));
+        }
 
+        // Re-render everything that shows entries.
+        function changed() {
+            if (selectedDate && !modal.hidden) renderEntryList();
+            refreshTotals();
+        }
+
+        function startEdit(entry) {
+            editingId = entry.id;
+            nameInput.value = entry.name;
+            amountInput.value = (entry.cents < 0 ? '-' : '') + Math.floor(Math.abs(entry.cents) / 100) + '.' + pad(Math.abs(entry.cents) % 100);
+            remarkInput.value = entry.remark;
+            formError.textContent = '';
+            saveBtn.textContent = 'Update entry';
+            cancelEditBtn.hidden = false;
+            nameInput.focus();
+        }
+
+        form.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var name = nameInput.value.trim();
+            var cents = parseCents(amountInput.value);
+            if (!name) { formError.textContent = 'Please enter a name.'; nameInput.focus(); return; }
+            if (cents === null) {
+                formError.textContent = 'Enter an amount like 12.50 (up to 2 decimals, minus sign for refunds, max $1,000,000).';
+                amountInput.focus();
+                return;
+            }
+            var fields = { name: name, cents: cents, remark: remarkInput.value.trim() };
+            if (editingId) updateEntry(selectedDate, editingId, fields);
+            else addEntry(selectedDate, fields);
+            resetForm();
+            changed();
+            nameInput.focus();
+        });
+
+        cancelEditBtn.onclick = function () { resetForm(); nameInput.focus(); };
+        document.getElementById('close-modal').onclick = closeModal;
+
+        modal.addEventListener('mousedown', function (ev) {
+            if (ev.target === modal) closeModal();
+        });
+
+        // Escape closes; Tab stays inside the dialog.
+        document.addEventListener('keydown', function (ev) {
+            if (modal.hidden) return;
+            if (ev.key === 'Escape') { ev.preventDefault(); closeModal(); return; }
+            if (ev.key !== 'Tab') return;
+            var items = Array.prototype.filter.call(
+                modal.querySelectorAll('button, input, textarea'),
+                function (el) { return !el.hidden && !el.disabled; });
+            var first = items[0];
+            var last = items[items.length - 1];
+            if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+            else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+            else if (items.indexOf(document.activeElement) === -1) { ev.preventDefault(); first.focus(); }
+        });
+
+        // ---- Calendar -----------------------------------------------------
+        if (typeof FullCalendar === 'undefined') {
+            setBanner('library', 'The calendar library failed to load (offline, blocked, or the file did not match its integrity hash). Reload to try again.', true);
+        } else {
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+                dayCellDidMount: function (arg) { decorateCell(arg.el, fmtDate(arg.date)); },
+                datesSet: function () {
+                    // Cells are in the DOM by now; (re)apply totals and the single tab stop.
+                    refreshTotals();
+                    resetTabStop();
+                    // Toolbar chevrons are decorative; the buttons carry the accessible names.
+                    calendarEl.querySelectorAll('.fc-icon').forEach(function (i) { i.setAttribute('aria-hidden', 'true'); });
+                },
+                dateClick: function (info) { openModal(info.dateStr); }
+            });
             calendar.render();
 
-            // Close the modal
-            closeModalBtn.onclick = function () {
-                modal.style.display = 'none';
-            };
+            calendarEl.addEventListener('focusin', function (ev) {
+                var cell = ev.target.closest && ev.target.closest('.fc-daygrid-day');
+                if (cell && ev.target === cell) setTabStop(cell);
+            });
 
-            // Save new entry into the local store
-            saveEntryBtn.onclick = function () {
-                var name = nameInput.value.trim();
-                var amount = parseFloat(amountInput.value.trim());
-                var remark = remarkInput.value.trim();
-
-                if (name && !isNaN(amount)) {
-                    addEntry(selectedDate, { name: name, amount: amount, remark: remark });
-
-                    // Clear input fields after saving
-                    nameInput.value = '';
-                    amountInput.value = '';
-                    remarkInput.value = '';
-
-                    // Refresh entry list and total amount
-                    displayEntriesForSelectedDate();
-                    showCalendarTotals(); // Update calendar totals after entry
-                }
-            };
-
-            // Display existing entries and total amount for the selected date
-            function displayEntriesForSelectedDate() {
-                entryList.innerHTML = '';
-
-                if (!selectedDate) {
-                    totalAmountDisplay.innerHTML = '';
+            calendarEl.addEventListener('keydown', function (ev) {
+                var cell = ev.target;
+                if (!cell.classList || !cell.classList.contains('fc-daygrid-day')) return;
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    openModal(cell.getAttribute('data-date'));
                     return;
                 }
+                var step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[ev.key];
+                if (!step) return;
+                ev.preventDefault();
+                var cells = Array.prototype.slice.call(dayCells());
+                var next = cells[cells.indexOf(cell) + step];
+                if (next) { setTabStop(next); next.focus(); }
+            });
+        }
 
-                var entries = getEntries(selectedDate);
-                var totalAmount = 0;
+        // ---- Toolbar ------------------------------------------------------
+        document.getElementById('goto-date').onclick = function () {
+            var picked = parseISODate(document.getElementById('date-search').value);
+            if (!picked) { say('Pick a valid date first (YYYY-MM-DD).'); return; }
+            if (calendar) calendar.gotoDate(picked);
+            say('Showing ' + picked.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '.');
+        };
 
-                entries.forEach(function (entry, index) {
-                    var entryDiv = document.createElement('div');
-                    entryDiv.className = 'entry';
-                    entryDiv.innerHTML = (index + 1) + '. ' + escapeHtml(entry.name) +
-                        ' - $' + Number(entry.amount).toFixed(2) + ' - ' + escapeHtml(entry.remark);
+        document.getElementById('load-demo').onclick = function () {
+            if (Object.keys(entries).length && !confirm('Replace all current entries with the fake demo data?')) return;
+            seedDemo();
+            persist();
+            refreshTotals();
+            say('Demo data loaded.');
+        };
 
-                    var deleteBtn = document.createElement('span');
-                    deleteBtn.innerHTML = '🗑️';
-                    deleteBtn.className = 'entry-delete';
-                    (function (id) {
-                        deleteBtn.onclick = function () {
-                            deleteEntry(selectedDate, id);
-                            displayEntriesForSelectedDate();
-                            showCalendarTotals(); // Update calendar totals after deletion
-                        };
-                    })(entry.id);
+        document.getElementById('export-json').onclick = function () {
+            var json = JSON.stringify({ version: SCHEMA_VERSION, exportedAt: new Date().toISOString(), entries: entries }, null, 2);
+            var url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'veerjis-calendar-' + fmtDate(new Date()) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            say('Exported ' + countEntries(entries) + ' entries.');
+        };
 
-                    entryDiv.appendChild(deleteBtn);
-                    entryList.appendChild(entryDiv);
-                    totalAmount += Number(entry.amount);
-                });
+        function countEntries(map) {
+            return Object.keys(map).reduce(function (n, k) { return n + map[k].length; }, 0);
+        }
 
-                totalAmountDisplay.innerHTML = 'Total: $' + totalAmount.toFixed(2);
-            }
+        var importFile = document.getElementById('import-file');
+        document.getElementById('import-json').onclick = function () { importFile.click(); };
 
-            // Show totals and color-coded background in the calendar view
-            function showCalendarTotals() {
-                const days = document.querySelectorAll('.fc-daygrid-day');
-                days.forEach(day => {
-                    const date = day.getAttribute('data-date');
-                    const entries = getEntries(date);
-
-                    // Clear previous total display, if any
-                    const totalDisplay = day.querySelector('.total-display');
-                    if (totalDisplay) totalDisplay.remove();
-
-                    // Reset background color first
-                    day.style.backgroundColor = '';
-
-                    if (entries.length > 0) {
-                        var totalAmount = entries.reduce(function (sum, e) {
-                            return sum + Number(e.amount);
-                        }, 0);
-
-                        // Display total in the cell and append it in the day element
-                        const totalElement = document.createElement('div');
-                        totalElement.classList.add('total-display');
-                        totalElement.innerHTML = '$' + totalAmount.toFixed(2);
-                        day.appendChild(totalElement);
-
-                        // Set background color based on the total amount
-                        if (totalAmount > 3000) {
-                            day.style.backgroundColor = 'tomato'; // High total, set to red
-                        } else {
-                            day.style.backgroundColor = 'lightgreen'; // Low total, set to green
-                        }
-                    }
-                });
-            }
-
-            window.onclick = function (event) {
-                if (event.target == modal) {
-                    modal.style.display = 'none';
+        importFile.addEventListener('change', function () {
+            var file = importFile.files[0];
+            importFile.value = '';
+            if (!file) return;
+            if (file.size > MAX_IMPORT_BYTES) { say('Import failed: file is larger than 5 MB.'); return; }
+            file.text().then(function (text) {
+                var parsed = null;
+                try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
+                var result = readEnvelope(parsed);
+                if (!result || (!countEntries(result.entries) && result.dropped)) {
+                    say('Import failed: this is not a valid Veerji\'s Calendar export. Nothing was changed.');
+                    return;
                 }
-            };
+                var n = countEntries(result.entries);
+                if (!confirm('Replace all current entries with the ' + n + ' entries from this file?')) return;
+                entries = result.entries;
+                persist();
+                refreshTotals();
+                if (modal.hidden === false) renderEntryList();
+                say('Imported ' + n + ' entries' + (result.dropped ? ' (' + result.dropped + ' invalid skipped).' : '.'));
+            }, function () { say('Import failed: could not read the file.'); });
         });
     </script>
-
-</head>
-
-<body>
-    <h2>Veerji's Calendar</h2>
-    <div id="demo-note">
-        Demo mode — entries are saved in this browser's localStorage only. Nothing leaves your device, no account needed.
-    </div>
-    <div id="toolbar" style="text-align:center;">
-        <input type="date" id="date-search" placeholder="YYYY-MM-DD" />
-        <button id="load-demo">Load demo data</button>
-    </div>
-    <div id='calendar'></div>
-
-    <!-- The Modal Popup for Entries -->
-    <div id="entryModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Enter Your Entry</h3>
-            <input type="text" id="name-input" placeholder="Name">
-            <input type="number" id="amount-input" placeholder="Amount">
-            <textarea id="remark-input" placeholder="Remark"></textarea>
-            <br>
-            <button id="save-entry">Save Entry</button>
-            <div id="entry-list"></div>
-            <div id="total-amount"></div> <!-- Display the total amount here -->
-        </div>
-    </div>
 </body>
 
 </html>
