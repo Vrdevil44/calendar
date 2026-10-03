@@ -42,3 +42,13 @@ yet? It just says "Add entries to see your forecast."
 ## Demo
 
 Live: https://vrdevil44.github.io/calendar/
+
+## What's new in v2.0
+
+*   **Quick-add:** Type phrases like "lunch 12.50" in the day popup to auto-parse entries. Use "refund" to credit your balance. You have an 8-second undo window after every addition.
+*   **Categories:** Organize spending with eight emoji-labeled, neon-colored categories. Entries now appear as color-coded chips directly in the calendar grid.
+*   **Monthly Breakdown:** A new summary strip above the grid displays your total spending per category for the current month.
+*   **Copy Summary:** Use the new button to copy a clean, category-based text summary of your monthly spending to your clipboard.
+*   **BudgetGuard:** Set a daily budget in the header. Days exceeding this limit are flagged with a red warning.
+*   **Recurring Entries:** Set items to repeat monthly. These show a badge and can be edited or deleted across the entire series.
+*   **Visual Refresh:** Enjoy a cleaner look with pastel gradients, rounded tiles, and a pink ring highlighting today.
