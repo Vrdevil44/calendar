@@ -427,6 +427,8 @@
         <label for="date-search">Go to date</label>
         <input type="date" id="date-search" />
         <button type="button" class="btn" id="goto-date">Go</button>
+        <label for="budget-input">Daily budget ($)</label>
+        <input type="text" id="budget-input" inputmode="decimal" autocomplete="off" size="8">
         <button type="button" class="btn secondary" id="load-demo">Load demo data</button>
         <button type="button" class="btn secondary" id="export-json">Export JSON</button>
         <button type="button" class="btn secondary" id="import-json">Import JSON</button>
@@ -442,6 +444,14 @@
         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <button type="button" class="close" id="close-modal" aria-label="Close">&times;</button>
             <h2 id="modal-title"></h2>
+            <div id="over-budget" role="alert" hidden>Over daily budget</div>
+            <form id="quick-form" novalidate>
+                <label for="quick-input">Quick add</label>
+                <input type="text" id="quick-input" autocomplete="off" placeholder="lunch 12.50  (add 'refund' to credit)">
+                <button type="submit" class="btn" id="quick-add">Quick add</button>
+                <div id="quick-hint" role="status"></div>
+            </form>
+            <div id="undo-bar"></div>
             <form id="entry-form" novalidate>
                 <label for="name-input">Name</label>
                 <input type="text" id="name-input" maxlength="80" autocomplete="off" required>
@@ -449,6 +459,7 @@
                 <input type="text" id="amount-input" inputmode="decimal" autocomplete="off" placeholder="e.g. 12.50" required>
                 <label for="remark-input">Remark (optional)</label>
                 <textarea id="remark-input" maxlength="200"></textarea>
+                <label><input type="checkbox" id="repeat-input"> Repeat monthly</label>
                 <div id="form-error" role="alert"></div>
                 <button type="submit" class="btn" id="save-entry">Add entry</button>
                 <button type="button" class="btn secondary" id="cancel-edit" hidden>Cancel edit</button>
@@ -468,6 +479,9 @@
         var MAX_ENTRY_CENTS = 1000000 * 100;   // sanity cap: $1,000,000 per entry
         var MAX_NAME = 80;
         var MAX_REMARK = 200;
+        var BUDGET_KEY = 'veerjis-calendar-budget';
+        var UNDO_MS = 8000;
+        var QUICK_ADD_RE = /^(.+?)\s+(\d+(?:\.\d{1,2})?)\s*(refund|minus)?$/;
         var MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
         var SCHEMA_VERSION = 2;
@@ -535,7 +549,10 @@
         // ---- Store --------------------------------------------------------
         // Persisted shape: { version: 2, entries: { 'YYYY-MM-DD': [ {id, name, cents, remark, category} ] } }
         // `category` is reserved for later and unused by the UI.
+        // Optional `recurring`: [ {id, name, cents, remark, category, dayOfMonth} ], one template per series.
+        // Instances are computed per month by getDayItems(); they are never written into `entries`.
         var entries = {};
+        var recurring = [];
 
         // Returns a clean entry, or null if it is unusable. `legacy` accepts v1's float `amount`.
         function cleanEntry(e, legacy) {
@@ -552,6 +569,13 @@
                 remark: typeof e.remark === 'string' ? e.remark.trim().slice(0, MAX_REMARK) : '',
                 category: typeof e.category === 'string' && e.category ? e.category : null
             };
+        }
+
+        function cleanTemplate(t) {
+            var e = cleanEntry(t, false);
+            if (!e || !Number.isInteger(t.dayOfMonth) || t.dayOfMonth < 1 || t.dayOfMonth > 31) return null;
+            e.dayOfMonth = t.dayOfMonth;
+            return e;
         }
 
         // Validates a { date: [entry] } map. Returns { entries, dropped }.
@@ -575,12 +599,20 @@
             if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
             if (!Number.isInteger(obj.version) || obj.version < 1 || obj.version > SCHEMA_VERSION) return null;
             if (!obj.entries || typeof obj.entries !== 'object' || Array.isArray(obj.entries)) return null;
-            return cleanEntryMap(obj.entries, false);
+            var result = cleanEntryMap(obj.entries, false);
+            result.recurring = [];
+            if (Array.isArray(obj.recurring)) {
+                obj.recurring.forEach(function (raw) {
+                    var t = cleanTemplate(raw);
+                    if (t) result.recurring.push(t); else result.dropped += 1;
+                });
+            }
+            return result;
         }
 
         function persist() {
             try {
-                localStorage.setItem(STORE_KEY, JSON.stringify({ version: SCHEMA_VERSION, entries: entries }));
+                localStorage.setItem(STORE_KEY, JSON.stringify({ version: SCHEMA_VERSION, entries: entries, recurring: recurring }));
                 setBanner('storage', null);
                 return true;
             } catch (e) {
@@ -625,6 +657,7 @@
                 return;
             }
             entries = result.entries;
+            recurring = result.recurring;
             if (result.dropped) {
                 setBanner('dropped', result.dropped + ' saved entr' + (result.dropped === 1 ? 'y was' : 'ies were') + ' invalid and skipped.');
             }
@@ -632,15 +665,87 @@
 
         function getEntries(dateStr) { return entries[dateStr] || []; }
 
-        function dayTotal(dateStr) {
-            return getEntries(dateStr).reduce(function (sum, e) { return sum + e.cents; }, 0);
+        // Virtual instances of recurring templates for one date (day clamped to the month's length).
+        function getInstances(dateStr) {
+            var d = parseISODate(dateStr);
+            var daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            return recurring.filter(function (t) { return Math.min(t.dayOfMonth, daysInMonth) === d.getDate(); })
+                .map(function (t) {
+                    return { id: 'series:' + t.id + ':' + dateStr, templateId: t.id, recurring: true,
+                        name: t.name, cents: t.cents, remark: t.remark, category: t.category };
+                });
         }
 
+        // Stored entries followed by recurring instances: everything that counts toward a day.
+        function getDayItems(dateStr) { return getEntries(dateStr).concat(getInstances(dateStr)); }
+
+        function dayTotal(dateStr) {
+            return getDayItems(dateStr).reduce(function (sum, e) { return sum + e.cents; }, 0);
+        }
+
+        // Returns the new entry's id.
         function addEntry(dateStr, fields) {
+            var id = makeId();
             (entries[dateStr] = entries[dateStr] || []).push({
-                id: makeId(), name: fields.name, cents: fields.cents, remark: fields.remark, category: null
+                id: id, name: fields.name, cents: fields.cents, remark: fields.remark, category: null
             });
             persist();
+            return id;
+        }
+
+        // fields: {name, cents, remark, dayOfMonth}. Returns the new template's id.
+        function addTemplate(fields) {
+            var id = makeId();
+            recurring.push({ id: id, name: fields.name, cents: fields.cents, remark: fields.remark,
+                category: null, dayOfMonth: fields.dayOfMonth });
+            persist();
+            return id;
+        }
+
+        function updateTemplate(id, fields) {
+            recurring.forEach(function (t) {
+                if (t.id === id) { t.name = fields.name; t.cents = fields.cents; t.remark = fields.remark; }
+            });
+            persist();
+        }
+
+        function deleteTemplate(id) {
+            recurring = recurring.filter(function (t) { return t.id !== id; });
+            persist();
+        }
+
+        // Quick-add grammar: "<name> <amount> [refund|minus]". Returns {name, cents} or null (never guesses).
+        function parseQuickAdd(text) {
+            var m = QUICK_ADD_RE.exec(String(text).trim());
+            if (!m) return null;
+            var name = m[1].trim();
+            var cents = parseCents(m[2]);
+            if (!name || name.length > MAX_NAME || cents === null) return null;
+            return { name: name, cents: m[3] && cents ? -cents : cents };
+        }
+
+        // ---- Budget -------------------------------------------------------
+        // User-settable daily budget in cents; defaults to HIGH_DAY_THRESHOLD_CENTS.
+        var budgetCents = HIGH_DAY_THRESHOLD_CENTS;
+
+        function loadBudget() {
+            try {
+                var raw = localStorage.getItem(BUDGET_KEY);
+                var cents = raw === null ? null : parseCents(raw);
+                if (cents !== null && cents >= 0) budgetCents = cents;
+            } catch (e) { /* storage blocked: keep default */ }
+        }
+
+        function setBudget(cents) {
+            budgetCents = cents === null ? HIGH_DAY_THRESHOLD_CENTS : cents;
+            try {
+                if (cents === null) localStorage.removeItem(BUDGET_KEY);
+                else localStorage.setItem(BUDGET_KEY, formatPlain(cents));
+            } catch (e) { /* best effort; the in-memory value still applies */ }
+        }
+
+        function formatPlain(cents) {
+            return (cents < 0 ? '-' : '') + Math.floor(Math.abs(cents) / 100) + '.' + pad(Math.abs(cents) % 100);
         }
 
         function updateEntry(dateStr, id, fields) {
@@ -681,6 +786,7 @@
 
         // ---- Boot ---------------------------------------------------------
         loadStore();
+        loadBudget();
 
         var calendarEl = document.getElementById('calendar');
         var modal = document.getElementById('entryModal');
@@ -695,11 +801,22 @@
         var totalAmountEl = document.getElementById('total-amount');
         var selectedDate = null;
         var editingId = null;
+        var editingSeriesId = null;
+        var repeatInput = document.getElementById('repeat-input');
+        var quickForm = document.getElementById('quick-form');
+        var quickInput = document.getElementById('quick-input');
+        var quickHint = document.getElementById('quick-hint');
+        var undoBar = document.getElementById('undo-bar');
+        var overBudgetEl = document.getElementById('over-budget');
+        var undoTimer = null;
         var calendar = null;
 
-        document.getElementById('legend').innerHTML =
-            '<span class="swatch low"></span>' + formatCents(HIGH_DAY_THRESHOLD_CENTS) + ' or less per day' +
-            '<span class="swatch high"></span>over ' + formatCents(HIGH_DAY_THRESHOLD_CENTS);
+        function renderLegend() {
+            document.getElementById('legend').innerHTML =
+                '<span class="swatch low"></span>' + formatCents(budgetCents) + ' or less per day' +
+                '<span class="swatch high"></span>over ' + formatCents(budgetCents);
+        }
+        renderLegend();
 
         // ---- Burn-rate forecast -------------------------------------------
         // Pace = (sum of entries dated the 1st..today of the current month) / days elapsed.
@@ -714,14 +831,14 @@
             var sum = 0, count = 0;
             for (var d = 1; d <= elapsed; d++) {
                 var key = prefix + pad(d);
-                count += getEntries(key).length;
+                count += getDayItems(key).length;
                 sum += dayTotal(key);
             }
             return {
                 prefix: prefix, elapsed: elapsed, daysInMonth: daysInMonth, hasData: count > 0,
                 monthEnd: new Date(year, month, daysInMonth),
                 projected: function (day) { return Math.round(sum * day / elapsed); },
-                overThreshold: sum > HIGH_DAY_THRESHOLD_CENTS * elapsed   // pace > threshold, no division
+                overThreshold: sum > budgetCents * elapsed   // pace > threshold, no division
             };
         }
 
@@ -742,19 +859,29 @@
             if (old) old.remove();
             var oldProj = cell.querySelector('.projected-display');
             if (oldProj) oldProj.remove();
+            var oldBadge = cell.querySelector('.recurring-badge');
+            if (oldBadge) oldBadge.remove();
             cell.classList.remove('day-low', 'day-high');
 
             var label = parseISODate(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            if (getEntries(dateStr).length) {
+            if (getDayItems(dateStr).length) {
                 var total = dayTotal(dateStr);
                 var el = document.createElement('div');
                 el.className = 'total-display';
                 el.textContent = formatCents(total);
                 frame.appendChild(el);
-                cell.classList.add(total > HIGH_DAY_THRESHOLD_CENTS ? 'day-high' : 'day-low');
+                cell.classList.add(total > budgetCents ? 'day-high' : 'day-low');
                 label += ', total ' + formatCents(total);
             } else {
                 label += ', no entries';
+            }
+            if (getInstances(dateStr).length) {
+                var badge = document.createElement('span');
+                badge.className = 'recurring-badge';
+                badge.textContent = '\u21BB';
+                badge.title = 'Recurring';
+                frame.appendChild(badge);
+                label += ', has recurring entries';
             }
             var f = getForecast();
             if (f.hasData && dateStr.indexOf(f.prefix) === 0) {
@@ -793,7 +920,9 @@
 
         function resetForm() {
             editingId = null;
+            editingSeriesId = null;
             form.reset();
+            repeatInput.disabled = false;
             formError.textContent = '';
             saveBtn.textContent = 'Add entry';
             cancelEditBtn.hidden = true;
@@ -806,6 +935,9 @@
                 'Entries for ' + parseISODate(dateStr).toLocaleDateString('en-US',
                     { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
             resetForm();
+            quickForm.reset();
+            quickHint.textContent = '';
+            clearUndo();
             renderEntryList();
             modal.hidden = false;
             nameInput.focus();
@@ -813,6 +945,7 @@
 
         function closeModal() {
             modal.hidden = true;
+            clearUndo();
             resetForm();
             var cell = calendarEl.querySelector('.fc-daygrid-day[data-date="' + selectedDate + '"]');
             if (cell) { setTabStop(cell); cell.focus(); }
@@ -821,28 +954,36 @@
 
         function renderEntryList() {
             entryList.textContent = '';
-            getEntries(selectedDate).forEach(function (entry, index) {
+            getDayItems(selectedDate).forEach(function (entry, index) {
                 var li = document.createElement('li');
                 li.className = 'entry';
 
                 var text = document.createElement('span');
                 text.className = 'entry-text';
-                text.textContent = (index + 1) + '. ' + entry.name + ' – ' + formatCents(entry.cents) +
+                text.textContent = (index + 1) + '. ' + (entry.recurring ? '\u21BB ' : '') + entry.name + ' – ' + formatCents(entry.cents) +
                     (entry.remark ? ' – ' + entry.remark : '');
 
                 var actions = document.createElement('span');
                 actions.className = 'entry-actions';
                 var editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.textContent = 'Edit';
-                editBtn.setAttribute('aria-label', 'Edit ' + entry.name);
-                editBtn.onclick = function () { startEdit(entry); };
+                editBtn.textContent = entry.recurring ? 'Edit series' : 'Edit';
+                editBtn.setAttribute('aria-label', (entry.recurring ? 'Edit series ' : 'Edit ') + entry.name);
+                editBtn.onclick = function () { if (entry.recurring) startEditSeries(entry); else startEdit(entry); };
                 var delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'delete';
-                delBtn.textContent = 'Delete';
-                delBtn.setAttribute('aria-label', 'Delete ' + entry.name);
+                delBtn.textContent = entry.recurring ? 'Delete series' : 'Delete';
+                delBtn.setAttribute('aria-label', (entry.recurring ? 'Delete series ' : 'Delete ') + entry.name);
                 delBtn.onclick = function () {
+                    if (entry.recurring) {
+                        if (!confirm('Delete the whole "' + entry.name + '" series (every month)?')) return;
+                        if (editingSeriesId === entry.templateId) resetForm();
+                        deleteTemplate(entry.templateId);
+                        changed();
+                        nameInput.focus();
+                        return;
+                    }
                     if (editingId === entry.id) resetForm();
                     deleteEntry(selectedDate, entry.id);
                     changed();
@@ -855,6 +996,7 @@
                 entryList.appendChild(li);
             });
             totalAmountEl.textContent = 'Total: ' + formatCents(dayTotal(selectedDate));
+            overBudgetEl.hidden = dayTotal(selectedDate) <= budgetCents;
         }
 
         // Re-render everything that shows entries.
@@ -871,8 +1013,66 @@
             formError.textContent = '';
             saveBtn.textContent = 'Update entry';
             cancelEditBtn.hidden = false;
+            repeatInput.checked = false;
+            repeatInput.disabled = true;
             nameInput.focus();
         }
+
+        // Template-level edit: changes every month of the series.
+        function startEditSeries(instance) {
+            startEdit(instance);
+            editingId = null;
+            editingSeriesId = instance.templateId;
+            repeatInput.checked = true;
+            saveBtn.textContent = 'Update series';
+        }
+
+        // ---- Undo ---------------------------------------------------------
+        function clearUndo() {
+            clearTimeout(undoTimer);
+            undoBar.textContent = '';
+        }
+
+        // Shows an "Undo" chip for UNDO_MS that runs `undoFn` once; a newer chip replaces it.
+        function showUndo(undoFn) {
+            clearUndo();
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'undo-chip';
+            chip.textContent = 'Undo';
+            chip.onclick = function () { clearUndo(); undoFn(); changed(); };
+            undoBar.appendChild(chip);
+            undoTimer = setTimeout(clearUndo, UNDO_MS);
+        }
+
+        function undoAddedEntry(dateStr, id) {
+            return function () { deleteEntry(dateStr, id); };
+        }
+
+        function undoAddedSeries(id) {
+            return function () { deleteTemplate(id); };
+        }
+
+        // ---- Quick add ----------------------------------------------------
+        quickForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var raw = quickInput.value;
+            if (!raw.trim()) return;
+            var parsed = parseQuickAdd(raw);
+            if (!parsed) {
+                // Typo: create nothing. Hand the text to the manual form and explain the format.
+                nameInput.value = raw.trim().slice(0, MAX_NAME);
+                quickHint.textContent = 'Could not read that. Use: name amount [refund], e.g. "lunch 12.50" or "coffee 4.75 refund". Nothing was added.';
+                nameInput.focus();
+                return;
+            }
+            var id = addEntry(selectedDate, { name: parsed.name, cents: parsed.cents, remark: '' });
+            quickForm.reset();
+            quickHint.textContent = '';
+            changed();
+            showUndo(undoAddedEntry(selectedDate, id));
+            quickInput.focus();
+        });
 
         form.addEventListener('submit', function (ev) {
             ev.preventDefault();
@@ -885,10 +1085,16 @@
                 return;
             }
             var fields = { name: name, cents: cents, remark: remarkInput.value.trim() };
-            if (editingId) updateEntry(selectedDate, editingId, fields);
-            else addEntry(selectedDate, fields);
+            var undoFn = null;
+            if (editingSeriesId) updateTemplate(editingSeriesId, fields);
+            else if (editingId) updateEntry(selectedDate, editingId, fields);
+            else if (repeatInput.checked) {
+                fields.dayOfMonth = parseISODate(selectedDate).getDate();
+                undoFn = undoAddedSeries(addTemplate(fields));
+            } else undoFn = undoAddedEntry(selectedDate, addEntry(selectedDate, fields));
             resetForm();
             changed();
+            if (undoFn) showUndo(undoFn);
             nameInput.focus();
         });
 
@@ -963,6 +1169,24 @@
             say('Showing ' + picked.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '.');
         };
 
+        var budgetInput = document.getElementById('budget-input');
+        function renderBudgetInput() { budgetInput.value = formatPlain(budgetCents); }
+        renderBudgetInput();
+        // Blank resets to the default; anything unparseable reverts to the current value.
+        budgetInput.addEventListener('change', function () {
+            var text = budgetInput.value.trim();
+            var cents = text === '' ? null : parseCents(text);
+            if (text !== '' && (cents === null || cents < 0)) {
+                say('Budget must be an amount like 3000 or 150.50.');
+            } else {
+                setBudget(cents);
+                renderLegend();
+                changed();
+                say('Daily budget is ' + formatCents(budgetCents) + '.');
+            }
+            renderBudgetInput();
+        });
+
         document.getElementById('load-demo').onclick = function () {
             if (Object.keys(entries).length && !confirm('Replace all current entries with the fake demo data?')) return;
             seedDemo();
@@ -972,7 +1196,7 @@
         };
 
         document.getElementById('export-json').onclick = function () {
-            var json = JSON.stringify({ version: SCHEMA_VERSION, exportedAt: new Date().toISOString(), entries: entries }, null, 2);
+            var json = JSON.stringify({ version: SCHEMA_VERSION, exportedAt: new Date().toISOString(), entries: entries, recurring: recurring }, null, 2);
             var url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
             var a = document.createElement('a');
             a.href = url;
@@ -1007,6 +1231,7 @@
                 var n = countEntries(result.entries);
                 if (!confirm('Replace all current entries with the ' + n + ' entries from this file?')) return;
                 entries = result.entries;
+                recurring = result.recurring;
                 persist();
                 refreshTotals();
                 if (modal.hidden === false) renderEntryList();
