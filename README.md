@@ -31,6 +31,14 @@ totals and the over-threshold day flagged in red.
 
 ![Mobile month view](screenshots/month-view-mobile.png)
 
+**Burn-rate forecast** — the app figures out your average daily spend and
+sketches projected totals (~$X, dashed outline) onto the days still ahead.
+Under the calendar a summary line reads "At this pace: $X by October 31" —
+it turns red if your pace is over the $3,000 daily threshold. Nothing logged
+yet? It just says "Add entries to see your forecast."
+
+![Burn-rate forecast with projected totals](screenshots/forecast-view.png)
+
 ## Demo
 
 Live: https://vrdevil44.github.io/calendar/
