@@ -236,6 +236,14 @@
             border-radius: 12px;
         }
 
+        /* QA fix: keep the 7-column grid inside the card at any viewport width */
+        .fc .fc-scrollgrid,
+        .fc .fc-daygrid-body table,
+        .fc .fc-col-header table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
         .fc-day-today .fc-daygrid-day-frame { box-shadow: inset 0 0 0 2px #ff7eb6; }
 
         .fc-daygrid-day {
