@@ -1403,6 +1403,7 @@
         } else {
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
+                height: 'auto',
                 headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
                 dayCellDidMount: function (arg) { decorateCell(arg.el, fmtDate(arg.date)); },
                 datesSet: function () {
