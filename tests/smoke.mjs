@@ -195,6 +195,40 @@ await scenario('keyboard: Enter opens popup, focus is trapped, Escape restores f
   eq(await page.evaluate(() => document.activeElement.getAttribute('data-date')), '2026-10-04', 'arrow moves');
 });
 
+await scenario('forecast: projections are dashed and separate, summary matches pace, red over threshold, refunds reduce pace', async (page) => {
+  const cents = (t) => Math.round(parseFloat(t.replace(/[$,]/g, '')) * 100);
+  let sum = 0;
+  for (const d of ['2026-10-01', '2026-10-02', '2026-10-03']) {
+    const t = await cell(page, d).locator('.total-display').allTextContents();
+    if (t.length) sum += cents(t[0]);
+  }
+  const fmt = (c) => '$' + (Math.floor(c / 100)).toLocaleString('en-US') + '.' + String(c % 100).padStart(2, '0');
+  eq(await page.locator('#forecast-summary').textContent(), 'At this pace: ' + fmt(Math.round(sum * 31 / 3)) + ' by October 31', 'demo summary');
+  eq(await cell(page, '2026-10-10').locator('.projected-display').textContent(), '~' + fmt(Math.round(sum * 10 / 3)), 'day 10 projection');
+  eq(await cell(page, '2026-10-10').locator('.total-display').count(), 0, 'no real total on projected day');
+  eq(await cell(page, TODAY).locator('.projected-display').count(), 0, 'no projection on today');
+  // Over threshold: add 20,000.00 today -> pace > $3,000/day -> red.
+  await openDay(page, TODAY);
+  await add(page, 'Big', '20000.00');
+  await page.keyboard.press('Escape');
+  eq(await page.locator('#forecast-summary').evaluate((e) => e.classList.contains('over')), true, 'red over threshold');
+  // Refund drags pace back under.
+  await openDay(page, TODAY);
+  await add(page, 'Refund', '-20000.00');
+  await page.keyboard.press('Escape');
+  eq(await page.locator('#forecast-summary').evaluate((e) => e.classList.contains('over')), false, 'neutral after refund');
+});
+
+await scenario('forecast: no entries this month shows the prompt; refund-only month is negative', async (page) => {
+  eq(await page.locator('#forecast-summary').textContent(), 'Add entries to see your forecast', 'empty prompt');
+  eq(await page.locator('.projected-display').count(), 0, 'no projections');
+  await openDay(page, TODAY);
+  await add(page, 'Refund', '-30.00');
+  await page.keyboard.press('Escape');
+  eq(await page.locator('#forecast-summary').textContent(), 'At this pace: -$310.00 by October 31', 'refund pace');
+  eq(await page.locator('#forecast-summary').evaluate((e) => e.classList.contains('over')), false, 'neutral');
+}, { init: () => localStorage.setItem('veerjis-calendar', JSON.stringify({ version: 2, entries: {} })) });
+
 await scenario('mobile viewport: no horizontal scroll, popup fits', async (page) => {
   eq(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'page width');
   await openDay(page, TODAY);
