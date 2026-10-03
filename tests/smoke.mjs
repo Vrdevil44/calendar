@@ -229,6 +229,40 @@ await scenario('forecast: no entries this month shows the prompt; refund-only mo
   eq(await page.locator('#forecast-summary').evaluate((e) => e.classList.contains('over')), false, 'neutral');
 }, { init: () => localStorage.setItem('veerjis-calendar', JSON.stringify({ version: 2, entries: {} })) });
 
+await scenario('categories: chips use category colour, breakdown strip totals, quick-add is Other, series carry category', async (page) => {
+  await openDay(page, '2026-10-15');
+  await page.selectOption('#category-input', 'food');
+  await add(page, 'Cat lunch', '10.00');
+  await page.fill('#quick-input', 'mystery 5.00');
+  await page.click('#quick-add');
+  await page.selectOption('#category-input', 'health');
+  await page.check('#repeat-input');
+  await add(page, 'Gym', '30.00');
+  await page.click('#close-modal');
+  const chips = await cell(page, '2026-10-15').locator('.cat-chip').evaluateAll((els) => els.map((e) => e.style.backgroundColor));
+  eq(JSON.stringify(chips), JSON.stringify(['rgb(255, 159, 28)', 'rgb(160, 166, 173)', 'rgb(63, 229, 106)']), 'chip colours food/other/health');
+  const strip = await page.locator('#breakdown .break-chip').allTextContents();
+  eq(strip.some((t) => t.includes('Health') && t.endsWith('$30.00')), true, 'health in strip');
+  eq(strip.some((t) => t.includes('Other') && t.endsWith('$5.00')), true, 'other in strip');
+  eq(strip.some((t) => t.includes('Transport') && t.includes('$62.00')), true, 'demo transport in strip');
+  eq(strip.some((t) => t.includes('Shopping') || t.includes('Utilities')), false, 'zero categories hidden (those demo entries are in September)');
+  await page.click('.fc-next-button');
+  const nov = await cell(page, '2026-11-15').locator('.cat-chip').evaluateAll((els) => els.map((e) => e.style.backgroundColor));
+  eq(JSON.stringify(nov), JSON.stringify(['rgb(63, 229, 106)']), 'recurring instance carries category');
+  eq((await page.locator('#breakdown').textContent()).includes('Health'), true, 'strip follows month');
+  eq(await page.locator('#breakdown .break-chip').count(), 1, 'only nonzero categories next month');
+});
+
+await scenario('copy summary: copies month totals by category + grand total, shows Copied', async (page) => {
+  await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = (t) => { window.__copied = t; return Promise.resolve(); }; });
+  await page.click('#copy-summary');
+  eq(await page.textContent('#copy-summary'), 'Copied \u2713', 'confirmation');
+  const text = await page.evaluate(() => window.__copied);
+  eq(text.startsWith('Spending summary: October 2026'), true, 'title');
+  eq(text.includes('Food: $99.25'), true, 'food line');
+  eq(text.endsWith('Total: $161.25'), true, 'grand total');
+});
+
 await scenario('mobile viewport: no horizontal scroll, popup fits', async (page) => {
   eq(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'page width');
   await openDay(page, TODAY);

@@ -34,24 +34,53 @@
     <style>
         body {
             font-family: 'Merriweather', Georgia, serif;
-            background-color: #f4f1ea;
+            background-color: #f7f2fb;
+            background-image: linear-gradient(180deg, #fdeef6 0%, #f1ecfb 45%, #e9f6fb 100%);
+            background-attachment: fixed;
             color: #222;
             margin: 0;
             padding: 20px;
+            line-height: 1.45;
+        }
+
+        /* Soft candy header: title centred, copy button tucked top-right */
+        .app-header {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto 18px;
+            padding: 18px 20px;
+            box-sizing: border-box;
+            border-radius: 20px;
+            background: linear-gradient(120deg, #ffd3e6 0%, #dcd0ff 50%, #c4ebff 100%);
+            box-shadow: 0 6px 18px rgba(130, 90, 200, 0.18);
         }
 
         h1 {
             font-weight: bold;
-            color: #222;
+            color: #2b1650;
             text-align: center;
             font-size: clamp(26px, 6vw, 36px);
-            margin: 0 0 20px;
-            border-bottom: 2px solid #0056b3;
-            padding-bottom: 10px;
+            margin: 0;
+            letter-spacing: 0.5px;
         }
+
+        #copy-summary {
+            position: absolute;
+            top: 50%;
+            right: 18px;
+            transform: translateY(-50%);
+            color: #2b1650;
+            background-color: rgba(255, 255, 255, 0.75);
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        #copy-summary:hover { background-color: #fff; }
 
         button,
         input,
+        select,
         textarea {
             font-family: 'Roboto', Arial, sans-serif;
         }
@@ -121,24 +150,31 @@
         #date-search {
             padding: 9px;
             font-size: 16px;
-            border-radius: 5px;
-            border: 2px solid #0056b3;
+            border-radius: 10px;
+            border: 2px solid #8f6fe0;
             background-color: #fff;
+        }
+
+        #budget-input {
+            padding: 9px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 2px solid #8f6fe0;
         }
 
         .btn {
             padding: 10px 15px;
             font-size: 16px;
             color: #fff;
-            background-color: #0056b3;
+            background-color: #6a4fd1;
             border: none;
-            border-radius: 5px;
+            border-radius: 12px;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
         .btn:hover {
-            background-color: #004494;
+            background-color: #5238b0;
         }
 
         .btn.secondary {
@@ -173,13 +209,34 @@
         #calendar {
             max-width: 900px;
             margin: 0 auto;
-            border: 2px solid #0056b3;
+            border: 2px solid #cdbdf5;
             padding: 20px;
             background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            box-shadow: 0px 6px 20px rgba(130, 90, 200, 0.15);
             box-sizing: border-box;
+            --fc-border-color: #efe7fb;
+            --fc-today-bg-color: transparent;
+            --fc-button-bg-color: #6a4fd1;
+            --fc-button-border-color: #6a4fd1;
+            --fc-button-hover-bg-color: #5238b0;
+            --fc-button-hover-border-color: #5238b0;
+            --fc-button-active-bg-color: #43309a;
+            --fc-button-active-border-color: #43309a;
         }
+
+        .fc .fc-toolbar-title { color: #2b1650; }
+        .fc .fc-button { border-radius: 12px; }
+        .fc .fc-col-header-cell { background: #f6f0ff; }
+        .fc .fc-col-header-cell-cushion { color: #3b2370; padding: 6px 4px; }
+
+        /* Rounded tiles: the colour lives on the inner frame, not the table cell */
+        .fc-daygrid-day-frame {
+            margin: 2px;
+            border-radius: 12px;
+        }
+
+        .fc-day-today .fc-daygrid-day-frame { box-shadow: inset 0 0 0 2px #ff7eb6; }
 
         .fc-daygrid-day {
             position: relative;
@@ -198,7 +255,7 @@
         /* Days from adjacent months: shaded instead of faded, so their numbers keep full contrast */
         .fc .fc-day-other .fc-daygrid-day-top { opacity: 1; }
         .fc-day-other .fc-daygrid-day-number { font-weight: normal; color: #444; }
-        .fc-day-other:not(.day-low):not(.day-high) { background-color: #f1f1f1; }
+        .fc-day-other:not(.day-low):not(.day-high) .fc-daygrid-day-frame { background-color: #f3f0f7; }
 
         .total-display {
             position: absolute;
@@ -215,8 +272,8 @@
         }
 
         /* Colour-coded totals (text/background pairs are >= 7:1 contrast) */
-        .fc-daygrid-day.day-low { background-color: #c9f0cb; }
-        .fc-daygrid-day.day-high { background-color: #f8b4ab; }
+        .fc-daygrid-day.day-low .fc-daygrid-day-frame { background-color: #c9f0cb; }
+        .fc-daygrid-day.day-high .fc-daygrid-day-frame { background-color: #f8b4ab; }
         .day-low .total-display { color: #0f2e14; }
         .day-high .total-display { color: #4a0a02; }
 
@@ -249,7 +306,66 @@
             font-weight: 500;
             color: #222;
             background-color: #eef1f4;
-            border-radius: 8px;
+            border-radius: 12px;
+        }
+
+        /* Category chips in day cells, and the month breakdown strip */
+        .cat-chips {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            pointer-events: none;
+        }
+
+        .cat-chip {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 2px;
+            box-sizing: border-box;
+            border-radius: 9px;
+            font-size: 11px;
+            line-height: 18px;
+            text-align: center;
+            color: #111;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.18);
+        }
+
+        .cat-chip.more { background-color: #e4e0ea; font-family: 'Roboto', Arial, sans-serif; font-weight: 700; }
+
+        #breakdown {
+            max-width: 900px;
+            margin: 0 auto 12px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        #breakdown .empty { color: #5d5470; }
+
+        .break-chip {
+            padding: 5px 12px;
+            border-radius: 999px;
+            color: #111;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        #category-input {
+            width: 100%;
+            margin-top: 4px;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #767676;
+            border-radius: 10px;
+            box-sizing: border-box;
+            background-color: #fff;
         }
 
         #forecast-summary.over { color: #7a0c00; background-color: #f8b4ab; }
@@ -272,8 +388,8 @@
             background-color: #fff;
             margin: 5vh auto;
             padding: 20px;
-            border: 2px solid #0056b3;
-            border-radius: 10px;
+            border: 2px solid #cdbdf5;
+            border-radius: 20px;
             width: min(420px, 92vw);
             box-sizing: border-box;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
@@ -366,9 +482,10 @@
             margin-top: 8px;
             padding: 8px 10px;
             font-size: 14px;
-            border-radius: 5px;
-            background-color: #f6f6f6;
-            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f8f6fb;
+            border: 1px solid #ddd5ec;
+            border-left: 6px solid var(--cat, #a0a6ad);
         }
 
         .entry-text {
@@ -384,10 +501,10 @@
         .entry-actions button {
             padding: 6px 10px;
             font-size: 13px;
-            color: #0a3a75;
+            color: #3b2370;
             background: #fff;
-            border: 1px solid #0a3a75;
-            border-radius: 4px;
+            border: 1px solid #3b2370;
+            border-radius: 8px;
             cursor: pointer;
         }
 
@@ -409,6 +526,11 @@
             .fc .fc-toolbar-title { font-size: 1.2em; }
             .fc-daygrid-day-number { font-size: 12px; top: 2px; right: 3px; }
             .total-display { font-size: 10px; top: 55%; }
+            .cat-chips { top: 3px; left: 3px; right: 18px; gap: 2px; }
+            .cat-chip { min-width: 8px; width: 8px; height: 8px; padding: 0; border-radius: 50%; font-size: 0; line-height: 0; box-shadow: none; }
+            .cat-chip.more { display: none; }
+            #copy-summary { position: static; transform: none; display: block; margin: 10px auto 0; }
+            .app-header { padding: 14px 12px; border-radius: 16px; }
             .projected-display { font-size: 9px; left: 1px; right: 1px; bottom: 1px; padding: 0; }
             #forecast-summary { font-size: 14px; }
             .fc .fc-col-header-cell-cushion { font-size: 12px; padding: 4px 0; }
@@ -418,7 +540,10 @@
 
 <body>
     <main>
-    <h1>Calendar</h1>
+    <header class="app-header">
+        <h1>Calendar</h1>
+        <button type="button" class="btn" id="copy-summary">Copy summary</button>
+    </header>
     <div id="demo-note">
         Demo mode: entries are saved in this browser's localStorage only. Nothing leaves your device, no account needed. The sample entries are fake.
     </div>
@@ -436,6 +561,7 @@
     </div>
     <div id="legend"></div>
     <div id="status" role="status" aria-live="polite"></div>
+    <div id="breakdown" aria-label="Month totals by category"></div>
     <div id="calendar"></div>
     <div id="forecast-summary" role="status"></div>
     </main>
@@ -457,6 +583,8 @@
                 <input type="text" id="name-input" maxlength="80" autocomplete="off" required>
                 <label for="amount-input">Amount ($, minus for refunds)</label>
                 <input type="text" id="amount-input" inputmode="decimal" autocomplete="off" placeholder="e.g. 12.50" required>
+                <label for="category-input">Category</label>
+                <select id="category-input"></select>
                 <label for="remark-input">Remark (optional)</label>
                 <textarea id="remark-input" maxlength="200"></textarea>
                 <label><input type="checkbox" id="repeat-input"> Repeat monthly</label>
@@ -484,12 +612,31 @@
         var QUICK_ADD_RE = /^(.+?)\s+(\d+(?:\.\d{1,2})?)\s*(refund|minus)?$/;
         var MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
+        // Neon colour + emoji per category. `other` is the default and the fallback for unknown/missing values.
+        var CATEGORIES = [
+            { key: 'food',      label: 'Food',      emoji: '\uD83C\uDF54',        color: '#ff9f1c' },
+            { key: 'transport', label: 'Transport', emoji: '\uD83D\uDE8C',        color: '#3d8bff' },
+            { key: 'home',      label: 'Home',      emoji: '\uD83C\uDFE0',        color: '#b46cff' },
+            { key: 'utilities', label: 'Utilities', emoji: '\uD83D\uDCA1',        color: '#ffe135' },
+            { key: 'fun',       label: 'Fun',       emoji: '\uD83C\uDF89',        color: '#ff4fa3' },
+            { key: 'shopping',  label: 'Shopping',  emoji: '\uD83D\uDECD\uFE0F', color: '#19d9c3' },
+            { key: 'health',    label: 'Health',    emoji: '\uD83D\uDC8A',        color: '#3fe56a' },
+            { key: 'other',     label: 'Other',     emoji: '\uD83D\uDCE6',        color: '#a0a6ad' }
+        ];
+        var DEFAULT_CATEGORY = 'other';
+        var MAX_DAY_CHIPS = 4;
+
         var SCHEMA_VERSION = 2;
         var STORE_KEY = 'veerjis-calendar';
         var CORRUPT_KEY = 'veerjis-calendar-corrupt';
         var LEGACY_KEY = 'veerjis-calendar-entries-v1';   // v1: bare {date: [{amount: float}]} map
 
         // ---- Helpers ------------------------------------------------------
+        function catOf(key) {
+            for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].key === key) return CATEGORIES[i];
+            return CATEGORIES[CATEGORIES.length - 1];
+        }
+
         function pad(n) { return (n < 10 ? '0' : '') + n; }
 
         // Local calendar date <-> 'YYYY-MM-DD'. Never use new Date('YYYY-MM-DD'): that parses
@@ -548,7 +695,7 @@
 
         // ---- Store --------------------------------------------------------
         // Persisted shape: { version: 2, entries: { 'YYYY-MM-DD': [ {id, name, cents, remark, category} ] } }
-        // `category` is reserved for later and unused by the UI.
+        // `category` is a CATEGORIES key; null/unknown counts as Other.
         // Optional `recurring`: [ {id, name, cents, remark, category, dayOfMonth} ], one template per series.
         // Instances are computed per month by getDayItems(); they are never written into `entries`.
         var entries = {};
@@ -567,7 +714,7 @@
                 name: name,
                 cents: cents,
                 remark: typeof e.remark === 'string' ? e.remark.trim().slice(0, MAX_REMARK) : '',
-                category: typeof e.category === 'string' && e.category ? e.category : null
+                category: catOf(e.category).key
             };
         }
 
@@ -687,7 +834,8 @@
         function addEntry(dateStr, fields) {
             var id = makeId();
             (entries[dateStr] = entries[dateStr] || []).push({
-                id: id, name: fields.name, cents: fields.cents, remark: fields.remark, category: null
+                id: id, name: fields.name, cents: fields.cents, remark: fields.remark,
+                category: fields.category || DEFAULT_CATEGORY
             });
             persist();
             return id;
@@ -697,14 +845,14 @@
         function addTemplate(fields) {
             var id = makeId();
             recurring.push({ id: id, name: fields.name, cents: fields.cents, remark: fields.remark,
-                category: null, dayOfMonth: fields.dayOfMonth });
+                category: fields.category || DEFAULT_CATEGORY, dayOfMonth: fields.dayOfMonth });
             persist();
             return id;
         }
 
         function updateTemplate(id, fields) {
             recurring.forEach(function (t) {
-                if (t.id === id) { t.name = fields.name; t.cents = fields.cents; t.remark = fields.remark; }
+                if (t.id === id) { t.name = fields.name; t.cents = fields.cents; t.remark = fields.remark; t.category = fields.category; }
             });
             persist();
         }
@@ -750,7 +898,7 @@
 
         function updateEntry(dateStr, id, fields) {
             getEntries(dateStr).forEach(function (e) {
-                if (e.id === id) { e.name = fields.name; e.cents = fields.cents; e.remark = fields.remark; }
+                if (e.id === id) { e.name = fields.name; e.cents = fields.cents; e.remark = fields.remark; e.category = fields.category; }
             });
             persist();
         }
@@ -766,21 +914,21 @@
         function seedDemo() {
             var today = new Date();
             var data = {};
-            function put(daysAgo, name, cents, remark) {
+            function put(daysAgo, name, cents, remark, category) {
                 var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysAgo);
                 (data[fmtDate(d)] = data[fmtDate(d)] || []).push(
-                    { id: makeId(), name: '[Demo] ' + name, cents: cents, remark: remark, category: null });
+                    { id: makeId(), name: '[Demo] ' + name, cents: cents, remark: remark, category: category });
             }
-            put(0, 'Sample groceries', 8450, 'Fake data');
-            put(1, 'Pretend petrol', 6200, 'Not a real purchase');
-            put(1, 'Made-up lunch', 1475, 'Fake data');
-            put(3, 'Imaginary insurance', 37800, 'Sample entry');
-            put(4, 'Pretend movie night', 3875, 'Fake data');
-            put(6, 'Sample phone bill', 10000, 'Not real');
-            put(9, 'Pretend rent', 130000, 'High-spend day: shows red');
-            put(9, 'Imaginary laptop', 140000, 'Sample entry');
-            put(9, 'Made-up dinner party', 32000, 'Fake data');
-            put(12, 'Pretend refund', -2500, 'Negative amounts count as refunds');
+            put(0, 'Sample groceries', 8450, 'Fake data', 'food');
+            put(1, 'Pretend petrol', 6200, 'Not a real purchase', 'transport');
+            put(1, 'Made-up lunch', 1475, 'Fake data', 'food');
+            put(3, 'Imaginary insurance', 37800, 'Sample entry', 'utilities');
+            put(4, 'Pretend movie night', 3875, 'Fake data', 'fun');
+            put(6, 'Sample phone bill', 10000, 'Not real', 'utilities');
+            put(9, 'Pretend rent', 130000, 'High-spend day: shows red', 'home');
+            put(9, 'Imaginary laptop', 140000, 'Sample entry', 'shopping');
+            put(9, 'Made-up dinner party', 32000, 'Fake data', 'fun');
+            put(12, 'Pretend refund', -2500, 'Negative amounts count as refunds', 'shopping');
             entries = data;
         }
 
@@ -808,8 +956,17 @@
         var quickHint = document.getElementById('quick-hint');
         var undoBar = document.getElementById('undo-bar');
         var overBudgetEl = document.getElementById('over-budget');
+        var categoryInput = document.getElementById('category-input');
         var undoTimer = null;
         var calendar = null;
+
+        CATEGORIES.forEach(function (c) {
+            var opt = document.createElement('option');
+            opt.value = c.key;
+            opt.textContent = c.emoji + ' ' + c.label;
+            if (c.key === DEFAULT_CATEGORY) opt.defaultSelected = true;   // form.reset() returns here
+            categoryInput.appendChild(opt);
+        });
 
         function renderLegend() {
             document.getElementById('legend').innerHTML =
@@ -842,6 +999,94 @@
             };
         }
 
+        // ---- Month breakdown ----------------------------------------------
+        // First day of the month the calendar is showing (today's month if the library did not load).
+        function visibleMonth() {
+            var d = new Date();
+            try { if (calendar) d = calendar.getDate(); } catch (e) { /* use today */ }
+            return new Date(d.getFullYear(), d.getMonth(), 1);
+        }
+
+        // Net cents per category for the visible month, in CATEGORIES order, nonzero only.
+        function monthBreakdown() {
+            var first = visibleMonth();
+            var daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+            var sums = {};
+            for (var d = 1; d <= daysInMonth; d++) {
+                getDayItems(fmtDate(new Date(first.getFullYear(), first.getMonth(), d))).forEach(function (e) {
+                    var k = catOf(e.category).key;
+                    sums[k] = (sums[k] || 0) + e.cents;
+                });
+            }
+            var rows = [], grand = 0;
+            CATEGORIES.forEach(function (c) {
+                if (sums[c.key]) rows.push({ cat: c, cents: sums[c.key] });
+                grand += sums[c.key] || 0;
+            });
+            return { first: first, rows: rows, total: grand };
+        }
+
+        function renderBreakdown() {
+            var el = document.getElementById('breakdown');
+            el.textContent = '';
+            var b = monthBreakdown();
+            if (!b.rows.length) {
+                var none = document.createElement('span');
+                none.className = 'empty';
+                none.textContent = 'No spending this month yet';
+                el.appendChild(none);
+                return;
+            }
+            b.rows.forEach(function (r) {
+                var chip = document.createElement('span');
+                chip.className = 'break-chip';
+                chip.style.backgroundColor = r.cat.color;
+                chip.textContent = r.cat.emoji + ' ' + r.cat.label + ' ' + formatCents(r.cents);
+                el.appendChild(chip);
+            });
+        }
+
+        function summaryText() {
+            var b = monthBreakdown();
+            var lines = ['Spending summary: ' + b.first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), ''];
+            if (!b.rows.length) lines.push('No entries this month.');
+            b.rows.forEach(function (r) { lines.push(r.cat.label + ': ' + formatCents(r.cents)); });
+            lines.push('', 'Total: ' + formatCents(b.total));
+            return lines.join('\n');
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+            return new Promise(function (resolve, reject) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                var ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+                ta.remove();
+                if (ok) resolve(); else reject(new Error('copy failed'));
+            });
+        }
+
+        var copyBtn = document.getElementById('copy-summary');
+        var copyTimer = null;
+        copyBtn.onclick = function () {
+            copyText(summaryText()).then(function () {
+                copyBtn.textContent = 'Copied \u2713';
+                say('Summary copied to clipboard.');
+            }, function () {
+                copyBtn.textContent = 'Copy failed';
+                say('Could not copy the summary.');
+            }).then(function () {
+                clearTimeout(copyTimer);
+                copyTimer = setTimeout(function () { copyBtn.textContent = 'Copy summary'; }, 1800);
+            });
+        };
+
         function renderForecastSummary() {
             var f = getForecast();
             var el = document.getElementById('forecast-summary');
@@ -861,6 +1106,8 @@
             if (oldProj) oldProj.remove();
             var oldBadge = cell.querySelector('.recurring-badge');
             if (oldBadge) oldBadge.remove();
+            var oldChips = cell.querySelector('.cat-chips');
+            if (oldChips) oldChips.remove();
             cell.classList.remove('day-low', 'day-high');
 
             var label = parseISODate(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -870,6 +1117,25 @@
                 el.className = 'total-display';
                 el.textContent = formatCents(total);
                 frame.appendChild(el);
+                var items = getDayItems(dateStr);
+                var chips = document.createElement('div');
+                chips.className = 'cat-chips';
+                items.slice(0, MAX_DAY_CHIPS).forEach(function (item) {
+                    var c = catOf(item.category);
+                    var chip = document.createElement('span');
+                    chip.className = 'cat-chip';
+                    chip.style.backgroundColor = c.color;
+                    chip.textContent = c.emoji;
+                    chip.title = c.label + ': ' + item.name + ' ' + formatCents(item.cents);
+                    chips.appendChild(chip);
+                });
+                if (items.length > MAX_DAY_CHIPS) {
+                    var more = document.createElement('span');
+                    more.className = 'cat-chip more';
+                    more.textContent = '+' + (items.length - MAX_DAY_CHIPS);
+                    chips.appendChild(more);
+                }
+                frame.appendChild(chips);
                 cell.classList.add(total > budgetCents ? 'day-high' : 'day-low');
                 label += ', total ' + formatCents(total);
             } else {
@@ -903,6 +1169,7 @@
         function refreshTotals() {
             dayCells().forEach(function (cell) { decorateCell(cell, cell.getAttribute('data-date')); });
             renderForecastSummary();
+            renderBreakdown();
         }
 
         // Roving tabindex: one tab stop for the grid, arrow keys move between days.
@@ -957,10 +1224,11 @@
             getDayItems(selectedDate).forEach(function (entry, index) {
                 var li = document.createElement('li');
                 li.className = 'entry';
+                li.style.setProperty('--cat', catOf(entry.category).color);
 
                 var text = document.createElement('span');
                 text.className = 'entry-text';
-                text.textContent = (index + 1) + '. ' + (entry.recurring ? '\u21BB ' : '') + entry.name + ' – ' + formatCents(entry.cents) +
+                text.textContent = (index + 1) + '. ' + (entry.recurring ? '\u21BB ' : '') + catOf(entry.category).emoji + ' ' + entry.name + ' – ' + formatCents(entry.cents) +
                     (entry.remark ? ' – ' + entry.remark : '');
 
                 var actions = document.createElement('span');
@@ -1010,6 +1278,7 @@
             nameInput.value = entry.name;
             amountInput.value = (entry.cents < 0 ? '-' : '') + Math.floor(Math.abs(entry.cents) / 100) + '.' + pad(Math.abs(entry.cents) % 100);
             remarkInput.value = entry.remark;
+            categoryInput.value = catOf(entry.category).key;
             formError.textContent = '';
             saveBtn.textContent = 'Update entry';
             cancelEditBtn.hidden = false;
@@ -1084,7 +1353,7 @@
                 amountInput.focus();
                 return;
             }
-            var fields = { name: name, cents: cents, remark: remarkInput.value.trim() };
+            var fields = { name: name, cents: cents, remark: remarkInput.value.trim(), category: categoryInput.value };
             var undoFn = null;
             if (editingSeriesId) updateTemplate(editingSeriesId, fields);
             else if (editingId) updateEntry(selectedDate, editingId, fields);
@@ -1111,7 +1380,7 @@
             if (ev.key === 'Escape') { ev.preventDefault(); closeModal(); return; }
             if (ev.key !== 'Tab') return;
             var items = Array.prototype.filter.call(
-                modal.querySelectorAll('button, input, textarea'),
+                modal.querySelectorAll('button, input, textarea, select'),
                 function (el) { return !el.hidden && !el.disabled; });
             var first = items[0];
             var last = items[items.length - 1];
