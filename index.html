@@ -220,6 +220,40 @@
         .day-low .total-display { color: #0f2e14; }
         .day-high .total-display { color: #4a0a02; }
 
+        /* Forecast: lighter text + dashed outline so projections never read as real totals */
+        .projected-display {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            padding: 1px 2px;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 11px;
+            font-style: italic;
+            text-align: center;
+            color: #5a6169;
+            border: 1px dashed #9aa1a8;
+            border-radius: 4px;
+            overflow-wrap: anywhere;
+            pointer-events: none;
+        }
+
+        #forecast-summary {
+            max-width: 900px;
+            margin: 12px auto 0;
+            padding: 8px 12px;
+            box-sizing: border-box;
+            text-align: center;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            color: #222;
+            background-color: #eef1f4;
+            border-radius: 8px;
+        }
+
+        #forecast-summary.over { color: #7a0c00; background-color: #f8b4ab; }
+
         /* Modal */
         .modal {
             position: fixed;
@@ -375,6 +409,8 @@
             .fc .fc-toolbar-title { font-size: 1.2em; }
             .fc-daygrid-day-number { font-size: 12px; top: 2px; right: 3px; }
             .total-display { font-size: 10px; top: 55%; }
+            .projected-display { font-size: 9px; left: 1px; right: 1px; bottom: 1px; padding: 0; }
+            #forecast-summary { font-size: 14px; }
             .fc .fc-col-header-cell-cushion { font-size: 12px; padding: 4px 0; }
         }
     </style>
@@ -399,6 +435,7 @@
     <div id="legend"></div>
     <div id="status" role="status" aria-live="polite"></div>
     <div id="calendar"></div>
+    <div id="forecast-summary" role="status"></div>
     </main>
 
     <div id="entryModal" class="modal" hidden>
